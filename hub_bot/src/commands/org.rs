@@ -5,7 +5,7 @@ use service::UserService;
 
 use crate::{Context, Error};
 
-#[poise::command(prefix_command, track_edits, owners_only)]
+#[poise::command(prefix_command, track_edits, owners_only, slash_command)]
 pub async fn register_org(
     ctx: Context<'_>,
     member: Member,

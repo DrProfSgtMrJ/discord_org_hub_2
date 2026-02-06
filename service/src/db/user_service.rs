@@ -1,4 +1,4 @@
-use entity::user::{self, ActiveModel as UserActiveModel, Entity as UserEntity, Model as UserModel};
+use entity::discord_user::{self, ActiveModel as UserActiveModel, Entity as UserEntity, Model as UserModel};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter};
 
 use crate::DbService;
@@ -35,7 +35,7 @@ impl UserService for DbService {
     async fn get_user_by_discord_id(&self, discord_id: &str) -> Result<Option<UserModel>, DbErr> {
         match self.get_connection() {
             Ok(conn) => {
-                UserEntity::find().filter(user::Column::DiscordId.eq(discord_id.to_string())).one(conn).await
+                UserEntity::find().filter(discord_user::Column::DiscordId.eq(discord_id.to_string())).one(conn).await
             }
             Err(err) => Err(err),
         }

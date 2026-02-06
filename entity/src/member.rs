@@ -5,14 +5,13 @@ use uuid::Uuid;
 use sea_orm::Set;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "org")]
+#[sea_orm(table_name = "member")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub name: String,
-    #[sea_orm(unique)]
-    pub discord_id: String,
-    pub owner_id: Uuid,
+    pub user_id: Uuid,
+    pub org_id: Uuid,
+    pub playing: bool,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }
@@ -21,14 +20,20 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::discord_user::Entity",
-        from = "Column::OwnerId",
+        from = "Column::UserId",
         to = "super::discord_user::Column::Id",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "Cascade"
     )]
     DiscordUser,
-    #[sea_orm(has_many = "super::member::Entity")]
-    Member,
+    #[sea_orm(
+        belongs_to = "super::org::Entity",
+        from = "Column::OrgId",
+        to = "super::org::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Org,
 }
 
 impl Related<super::discord_user::Entity> for Entity {
@@ -37,21 +42,21 @@ impl Related<super::discord_user::Entity> for Entity {
     }
 }
 
-impl Related<super::member::Entity> for Entity {
+impl Related<super::org::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Member.def()
+        Relation::Org.def()
     }
 }
 
 impl ActiveModelBehavior for ActiveModel {}
 
 impl ActiveModel {
-    pub fn new(name: &str, discord_id: &str, owner_id: Uuid) -> Self {
+    pub fn new(user_id: Uuid, org_id: Uuid, playing: bool) -> Self {
         Self {
             id: Set(Uuid::new_v4()),
-            name: Set(name.to_string()),
-            discord_id: Set(discord_id.to_string()),
-            owner_id: Set(owner_id),
+            user_id: Set(user_id),
+            org_id: Set(org_id),
+            playing: Set(playing),
             created_at: Set(chrono::Utc::now().naive_utc()),
             updated_at: Set(chrono::Utc::now().naive_utc()),
         }

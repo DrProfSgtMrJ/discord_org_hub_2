@@ -2,5 +2,6 @@
 
 pub mod prelude;
 
-pub mod user;
+pub mod discord_user;
+pub mod member;
 pub mod org;

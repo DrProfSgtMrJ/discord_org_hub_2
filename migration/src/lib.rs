@@ -2,6 +2,7 @@ pub use sea_orm_migration::prelude::*;
 
 mod m20220101_000001_create_discord_user_table;
 mod m20260206_034522_create_org_table;
+mod m20260206_212941_create_member_table;
 
 pub struct Migrator;
 
@@ -11,6 +12,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20220101_000001_create_discord_user_table::Migration),
             Box::new(m20260206_034522_create_org_table::Migration),
+            Box::new(m20260206_212941_create_member_table::Migration),
         ]
     }
 }

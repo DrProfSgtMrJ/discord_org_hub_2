@@ -33,7 +33,7 @@ async fn main() {
     let prefix = std::env::var("DISCORD_BOT_PREFIX").unwrap_or("!".to_string());
 
     let options = poise::FrameworkOptions {
-        commands: vec![commands::register_user(), commands::register_org()],
+        commands: vec![commands::register_user(), commands::register_org(), commands::register_member()],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some(prefix),
             ..Default::default()
