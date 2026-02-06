@@ -1,5 +1,5 @@
 use sea_orm_migration::{prelude::*, schema::*};
-use crate::m20220101_000001_create_user_table::User;
+use crate::m20220101_000001_create_discord_user_table::User;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;

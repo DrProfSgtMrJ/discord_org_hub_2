@@ -1,0 +1,53 @@
+use poise::serenity_prelude::Member;
+use sea_orm::SqlErr;
+use service::OrgService;
+use service::UserService;
+
+use crate::{Context, Error};
+
+#[poise::command(prefix_command, track_edits, owners_only)]
+pub async fn register_org(
+    ctx: Context<'_>,
+    member: Member,
+    org_name: String,
+) -> Result<(), Error> {
+    //Adds a new Org to the database
+    if let Some(org_id) = ctx.guild_id() {
+        let org_discord_id = org_id.get().to_string();
+        let owner_id = member.user.id.get().to_string();
+        let db_service = ctx.data();
+        if let Some(owner) = db_service.get_user_by_discord_id(owner_id.as_str()).await? {
+            match db_service.create_org(org_name.as_str(), org_discord_id.as_str(), owner.id).await {
+                Ok(org) => {
+                    ctx.reply(format!(
+                        "Organization {} registered successfully!",
+                        org.name
+                    ))
+                    .await?;
+                }
+                Err(err) => {
+                    // Handle the error
+                    if let Some(sqlx_err) = err.sql_err() {
+                        match sqlx_err {
+                            SqlErr::UniqueConstraintViolation(_) => {
+                                ctx.reply(format!(
+                                    "Organization with Discord ID {} already exists",
+                                    org_discord_id
+                                )).await?;
+                            }
+                            _ => {
+                                ctx.reply("An unexpected database error occurred").await?;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            ctx.reply(format!(
+                "User with Discord ID {} not found. Please register as a user first.",
+                owner_id
+            )).await?;
+        }
+    }
+    Ok(())
+}

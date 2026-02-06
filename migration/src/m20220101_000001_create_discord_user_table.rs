@@ -38,7 +38,7 @@ impl MigrationTrait for Migration {
         manager
             .create_index(
                 Index::create()
-                    .name("inx_user_discord_id")
+                    .name("idx_user_discord_id")
                     .table(User::Table)
                     .col(User::DiscordId)
                     .unique()
@@ -60,6 +60,7 @@ impl MigrationTrait for Migration {
 
 #[derive(DeriveIden)]
 pub enum User {
+    #[sea_orm(iden = "discord_user")]
     Table,
     Id,
     DisplayName,
