@@ -1,0 +1,12 @@
+[package]
+name = "hub_bot"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio.workspace = true
+dotenv.workspace = true
+poise = "0.6.1"
+service = { path = "../service" }
+entity = { path = "../entity" }
+sea-orm.workspace = true

@@ -1,0 +1,13 @@
+[package]
+name = "service"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dotenv.workspace = true
+uuid.workspace = true
+serde.workspace = true
+chrono.workspace = true
+async-trait = "0.1.89"
+sea-orm.workspace = true
+entity.workspace = true
