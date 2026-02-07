@@ -1,7 +1,8 @@
-mod user;
-mod org;
+mod common;
 mod member;
+mod org;
+mod user;
 
-pub use user::*;
-pub use org::*;
 pub use member::*;
+pub use org::*;
+pub use user::*;

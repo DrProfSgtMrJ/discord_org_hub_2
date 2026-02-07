@@ -3,8 +3,12 @@ use sea_orm::SqlErr;
 use service::OrgService;
 use service::UserService;
 
+use crate::commands::common::is_unique_violation;
 use crate::{Context, Error};
 
+/// Command to register an org
+///
+/// Enter !register_org @<owner> <org_name>
 #[poise::command(prefix_command, track_edits, owners_only, slash_command)]
 pub async fn register_org(ctx: Context<'_>, member: Member, org_name: String) -> Result<(), Error> {
     //Adds a new Org to the database
@@ -26,19 +30,18 @@ pub async fn register_org(ctx: Context<'_>, member: Member, org_name: String) ->
                 }
                 Err(err) => {
                     // Handle the error
-                    if let Some(sqlx_err) = err.sql_err() {
-                        match sqlx_err {
-                            SqlErr::UniqueConstraintViolation(_) => {
-                                ctx.reply(format!(
-                                    "Organization with Discord ID {} already exists",
-                                    org_discord_id
-                                ))
-                                .await?;
-                            }
-                            _ => {
-                                ctx.reply("An unexpected database error occurred").await?;
-                            }
-                        }
+                    if is_unique_violation(&err) {
+                        ctx.reply(format!(
+                            "Organization with name {} already exists.",
+                            org_name
+                        ))
+                        .await?;
+                    } else {
+                        ctx.reply(format!(
+                            "An error occurred while registering the organization: {}",
+                            err
+                        ))
+                        .await?;
                     }
                 }
             }

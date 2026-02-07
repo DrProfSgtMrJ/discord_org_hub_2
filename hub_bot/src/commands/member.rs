@@ -1,5 +1,5 @@
+use super::common::is_unique_violation;
 use poise::serenity_prelude::Member;
-use sea_orm::SqlErr;
 use service::MemberService;
 use service::OrgService;
 use service::UserService;
@@ -33,19 +33,14 @@ pub async fn register_member(
                         .await?;
                     }
                     Err(err) => {
-                        if let Some(sqlx_err) = err.sql_err() {
-                            match sqlx_err {
-                                SqlErr::UniqueConstraintViolation(_) => {
-                                    ctx.reply(format!(
-                                        "Organization with Discord ID {} already exists",
-                                        org_discord_id
-                                    ))
-                                    .await?;
-                                }
-                                _ => {
-                                    ctx.reply("An unexpected database error occurred").await?;
-                                }
-                            }
+                        if is_unique_violation(&err) {
+                            ctx.reply(format!(
+                                "Member with Discord ID {} already exists in the organization",
+                                discord_user_id
+                            ))
+                            .await?;
+                        } else {
+                            ctx.reply("An unexpected database error occurred").await?;
                         }
                     }
                 }
