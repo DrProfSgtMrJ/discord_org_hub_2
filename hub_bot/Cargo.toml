@@ -10,3 +10,4 @@ poise = "0.6.1"
 service = { path = "../service" }
 entity = { path = "../entity" }
 sea-orm.workspace = true
+chrono.workspace = true

@@ -1,5 +1,5 @@
-use sea_orm_migration::{prelude::*, schema::*};
 use crate::m20220101_000001_create_discord_user_table::User;
+use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,16 +14,25 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Org::Table)
                     .if_not_exists()
-                    .col(uuid(Org::Id)
-                        .not_null()
-                        .primary_key()
-                        .default(Expr::cust("gen_random_uuid()"))
+                    .col(
+                        uuid(Org::Id)
+                            .not_null()
+                            .primary_key()
+                            .default(Expr::cust("gen_random_uuid()")),
                     )
                     .col(string(Org::Name).not_null())
                     .col(string(Org::DiscordId).not_null().unique_key())
                     .col(uuid(Org::OwnerId).not_null())
-                    .col(timestamp(Org::CreatedAt).not_null().default(Expr::current_timestamp()))
-                    .col(timestamp(Org::UpdatedAt).not_null().default(Expr::current_timestamp()))
+                    .col(
+                        timestamp(Org::CreatedAt)
+                            .not_null()
+                            .default(Expr::current_timestamp()),
+                    )
+                    .col(
+                        timestamp(Org::UpdatedAt)
+                            .not_null()
+                            .default(Expr::current_timestamp()),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_org_owner_id")

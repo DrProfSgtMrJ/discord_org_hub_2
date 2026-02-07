@@ -1,5 +1,4 @@
 use poise::serenity_prelude::Member;
-use sea_orm::SqlErr;
 use service::OrgService;
 use service::UserService;
 

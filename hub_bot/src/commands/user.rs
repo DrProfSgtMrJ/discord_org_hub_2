@@ -1,5 +1,10 @@
+use std::time::Duration;
+
 use super::common::is_unique_violation;
-use poise::serenity_prelude::Member;
+use poise::serenity_prelude::{
+    self, ComponentInteractionDataKind, CreateActionRow, CreateInteractionResponseMessage,
+    CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, Member,
+};
 use service::UserService;
 
 use crate::{Context, Error};
@@ -50,4 +55,58 @@ pub async fn register_user(
             Err(err.into())
         }
     }
+}
+
+/// Test command
+///
+/// !pick_color
+#[poise::command(prefix_command, track_edits, owners_only, slash_command)]
+pub async fn pick_color(ctx: Context<'_>) -> Result<(), Error> {
+    let options = vec![
+        CreateSelectMenuOption::new("Red", "red").description("The color red"),
+        CreateSelectMenuOption::new("Green", "green").description("The color green"),
+        CreateSelectMenuOption::new("Blue", "blue").description("The color blue"),
+    ];
+
+    let select_menu =
+        CreateSelectMenu::new("color_picker", CreateSelectMenuKind::String { options })
+            .placeholder("Choose your favorite color!");
+    let components = vec![CreateActionRow::SelectMenu(select_menu)];
+
+    ctx.send(
+        poise::CreateReply::default()
+            .content("What's your favorite color?")
+            .components(components),
+    )
+    .await?;
+
+    while let Some(interaction) = serenity_prelude::ComponentInteractionCollector::new(ctx)
+        .filter(move |interaction| interaction.data.custom_id == "color_picker")
+        .timeout(Duration::from_secs(60))
+        .await
+    {
+        if let ComponentInteractionDataKind::StringSelect { values } = &interaction.data.kind {
+            let color = &values[0];
+
+            let response = match color.as_str() {
+                "red" => "You chose red!",
+                "green" => "You chose green!",
+                "blue" => "You chose blue!",
+                _ => "Invalid color!",
+            };
+
+            interaction
+                .create_response(
+                    ctx.http(),
+                    serenity_prelude::CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .content(response)
+                            .components(vec![]),
+                    ),
+                )
+                .await?;
+            break;
+        }
+    }
+    Ok(())
 }

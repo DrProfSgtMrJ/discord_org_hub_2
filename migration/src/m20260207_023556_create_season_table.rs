@@ -13,10 +13,11 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Season::Table)
                     .if_not_exists()
-                    .col(uuid(Season::Id)
-                        .not_null()
-                        .primary_key()
-                        .default(Expr::cust("gen_random_uuid()"))
+                    .col(
+                        uuid(Season::Id)
+                            .not_null()
+                            .primary_key()
+                            .default(Expr::cust("gen_random_uuid()")),
                     )
                     .col(string(Season::Title).not_null())
                     .col(uuid(Season::OrgId).not_null())
@@ -39,10 +40,11 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(SeasonMember::Table)
                     .if_not_exists()
-                    .col(uuid(SeasonMember::Id)
-                        .not_null()
-                        .primary_key()
-                        .default(Expr::cust("gen_random_uuid()"))
+                    .col(
+                        uuid(SeasonMember::Id)
+                            .not_null()
+                            .primary_key()
+                            .default(Expr::cust("gen_random_uuid()")),
                     )
                     .col(uuid(SeasonMember::SeasonId).not_null())
                     .col(uuid(SeasonMember::MemberId).not_null())
@@ -69,11 +71,11 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(Org::Table)
-                        .add_column(uuid_null(Org::CurrentSeasonId))
-                        .to_owned()
+                    .add_column(uuid_null(Org::CurrentSeasonId))
+                    .to_owned(),
             )
             .await?;
-        
+
         manager
             .create_foreign_key(
                 ForeignKey::create()
@@ -82,7 +84,8 @@ impl MigrationTrait for Migration {
                     .to(Season::Table, Season::Id)
                     .on_delete(ForeignKeyAction::SetNull)
                     .to_owned(),
-            ).await
+            )
+            .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
@@ -117,25 +120,17 @@ impl MigrationTrait for Migration {
             .alter_table(
                 Table::alter()
                     .table(Org::Table)
-                        .drop_column(Org::CurrentSeasonId)
-                        .to_owned()
+                    .drop_column(Org::CurrentSeasonId)
+                    .to_owned(),
             )
             .await?;
         manager
-            .drop_table(
-                Table::drop()
-                .table(SeasonMember::Table)
-                .to_owned()
-            )
-        .await?;
+            .drop_table(Table::drop().table(SeasonMember::Table).to_owned())
+            .await?;
 
         manager
-            .drop_table(
-                Table::drop()
-                .table(Season::Table)
-                .to_owned()
-            )
-        .await
+            .drop_table(Table::drop().table(Season::Table).to_owned())
+            .await
     }
 }
 
@@ -163,7 +158,7 @@ pub enum SeasonMember {
 pub enum Org {
     Table,
     Id,
-    CurrentSeasonId
+    CurrentSeasonId,
 }
 
 #[derive(DeriveIden)]
