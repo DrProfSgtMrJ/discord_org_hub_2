@@ -3,45 +3,33 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "org")]
+#[sea_orm(table_name = "season_member")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub name: String,
-    #[sea_orm(unique)]
-    pub discord_id: String,
-    pub owner_id: Uuid,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
-    pub current_season_id: Option<Uuid>,
+    pub season_id: Uuid,
+    pub member_id: Uuid,
+    pub placement: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::discord_user::Entity",
-        from = "Column::OwnerId",
-        to = "super::discord_user::Column::Id",
+        belongs_to = "super::member::Entity",
+        from = "Column::MemberId",
+        to = "super::member::Column::Id",
         on_update = "NoAction",
-        on_delete = "NoAction"
+        on_delete = "Cascade"
     )]
-    DiscordUser,
-    #[sea_orm(has_many = "super::member::Entity")]
     Member,
     #[sea_orm(
         belongs_to = "super::season::Entity",
-        from = "Column::CurrentSeasonId",
+        from = "Column::SeasonId",
         to = "super::season::Column::Id",
         on_update = "NoAction",
-        on_delete = "SetNull"
+        on_delete = "Cascade"
     )]
     Season,
-}
-
-impl Related<super::discord_user::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::DiscordUser.def()
-    }
 }
 
 impl Related<super::member::Entity> for Entity {

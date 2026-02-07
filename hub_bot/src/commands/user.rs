@@ -1,10 +1,9 @@
 use poise::serenity_prelude::Member;
-use sea_orm::SqlErr;
 use service::UserService;
 
 use crate::{Context, Error};
 
-#[poise::command(prefix_command, track_edits, owners_only, slash_command)]
+#[poise::command(prefix_command, track_edits, owners_only)]
 pub async fn register_user(
     ctx: Context<'_>,
     member: Member,
@@ -30,23 +29,13 @@ pub async fn register_user(
                 user.display_name
             ))
             .await?;
+            Ok(())
         }
         Err(err) => {
             // Handle the error
-            if let Some(sqlx_err) = err.sql_err() {
-                match sqlx_err {
-                    SqlErr::UniqueConstraintViolation(_) => {
-                        ctx.reply(format!(
-                            "User with Discord ID {} already exists",
-                            discord_id
-                        )).await?;
-                    }
-                        _ => {
-                            ctx.reply("An unexpected database error occurred").await?;
-                        }
-                    }
-                }
-            }
+            ctx.reply(format!("An unexpected error occurred: {}", err))
+                .await?;
+            Err(err.into())
         }
-        Ok(())
     }
+}

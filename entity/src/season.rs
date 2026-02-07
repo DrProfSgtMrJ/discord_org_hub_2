@@ -3,26 +3,19 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "member")]
+#[sea_orm(table_name = "season")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub user_id: Uuid,
+    pub title: String,
     pub org_id: Uuid,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub num_players: i32,
+    pub start_date: Date,
+    pub end_date: Option<Date>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::discord_user::Entity",
-        from = "Column::UserId",
-        to = "super::discord_user::Column::Id",
-        on_update = "NoAction",
-        on_delete = "Cascade"
-    )]
-    DiscordUser,
     #[sea_orm(
         belongs_to = "super::org::Entity",
         from = "Column::OrgId",
@@ -33,12 +26,6 @@ pub enum Relation {
     Org,
     #[sea_orm(has_many = "super::season_member::Entity")]
     SeasonMember,
-}
-
-impl Related<super::discord_user::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::DiscordUser.def()
-    }
 }
 
 impl Related<super::org::Entity> for Entity {

@@ -7,13 +7,12 @@ use service::UserService;
 use crate::{Context, Error};
 
 /// Command to register a member to an organization
-/// 
+///
 /// Enter !register_member @member to register the mentioned member to the organization associated with the current guild
 #[poise::command(prefix_command, track_edits, owners_only, slash_command)]
 pub async fn register_member(
     ctx: Context<'_>,
-    #[description = "The member to register"]
-    member: Member,
+    #[description = "The member to register"] member: Member,
 ) -> Result<(), Error> {
     if let Some(org_id) = ctx.guild_id() {
         let org_discord_id = org_id.get().to_string();
@@ -25,11 +24,11 @@ pub async fn register_member(
             if let Some(user) = db_service.get_user_by_discord_id(&discord_user_id).await? {
                 let org_uuid = org.id;
                 let user_uuid = user.id;
-                match db_service.create_member(user_uuid, org_uuid, false).await {
+                match db_service.create_member(user_uuid, org_uuid).await {
                     Ok(_) => {
                         ctx.reply(format!(
                             "Member {} registered successfully!",
-                             user.display_name
+                            user.display_name
                         ))
                         .await?;
                     }
@@ -40,7 +39,8 @@ pub async fn register_member(
                                     ctx.reply(format!(
                                         "Organization with Discord ID {} already exists",
                                         org_discord_id
-                                    )).await?;
+                                    ))
+                                    .await?;
                                 }
                                 _ => {
                                     ctx.reply("An unexpected database error occurred").await?;
@@ -49,12 +49,12 @@ pub async fn register_member(
                         }
                     }
                 }
-
             } else {
                 ctx.reply(format!(
                     "User with Discord ID {} not found. Please register as a user first.",
                     discord_user_id
-                )).await?;
+                ))
+                .await?;
             }
         } else {
             ctx.reply(format!(

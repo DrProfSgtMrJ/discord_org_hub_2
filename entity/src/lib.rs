@@ -5,3 +5,6 @@ pub mod prelude;
 pub mod discord_user;
 pub mod member;
 pub mod org;
+pub mod season;
+pub mod season_member;
+pub mod entities;

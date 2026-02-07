@@ -3,3 +3,5 @@
 pub use super::discord_user::Entity as DiscordUser;
 pub use super::member::Entity as Member;
 pub use super::org::Entity as Org;
+pub use super::season::Entity as Season;
+pub use super::season_member::Entity as SeasonMember;
