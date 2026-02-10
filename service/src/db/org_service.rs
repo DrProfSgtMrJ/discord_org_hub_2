@@ -1,5 +1,8 @@
 use entity::org::{self, ActiveModel as OrgActiveModel, Entity as OrgEntity, Model as OrgModel};
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DbErr, EntityTrait, IntoActiveModel,
+    QueryFilter,
+};
 use uuid::Uuid;
 
 use crate::DbService;
@@ -14,6 +17,7 @@ pub trait OrgService {
         current_season_id: Option<Uuid>,
     ) -> Result<OrgModel, DbErr>;
     async fn get_org_by_discord_id(&self, discord_id: &str) -> Result<Option<OrgModel>, DbErr>;
+    async fn set_current_season(&self, org_id: Uuid, season_id: Uuid) -> Result<(), DbErr>;
 }
 
 #[async_trait::async_trait]
@@ -40,6 +44,22 @@ impl OrgService for DbService {
                     .filter(org::Column::DiscordId.eq(discord_id.to_string()))
                     .one(conn)
                     .await
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn set_current_season(&self, org_id: Uuid, season_id: Uuid) -> Result<(), DbErr> {
+        match self.get_connection() {
+            Ok(conn) => {
+                if let Some(org) = OrgEntity::find_by_id(org_id).one(conn).await? {
+                    let mut org_active: OrgActiveModel = org.into_active_model();
+                    org_active.current_season_id = Set(Some(season_id));
+                    org_active.save(conn).await?;
+                    Ok(())
+                } else {
+                    Err(DbErr::RecordNotFound("Org not found".into()))
+                }
             }
             Err(err) => Err(err),
         }

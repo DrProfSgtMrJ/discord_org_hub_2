@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
 use poise::serenity_prelude::{
-    ChannelType, CreateActionRow, CreateInputText, CreateModal, CreateSelectMenu,
-    CreateSelectMenuKind, CreateSelectMenuOption, InputTextStyle,
+    ButtonStyle, CreateActionRow, CreateButton, CreateInputText, CreateModal, InputTextStyle,
 };
 
 #[derive(Debug)]
@@ -122,5 +121,70 @@ impl Into<CreateActionRow> for InputText {
                 .max_length(self.max_length())
                 .required(self.required()),
         )
+    }
+}
+
+#[derive(Debug)]
+pub enum Button {
+    SetAsCurrentSeasonYes { season_uuid: String },
+    SetAsCurrentSeasonNo { season_uuid: String },
+}
+
+impl Button {
+    pub fn label(&self) -> String {
+        match self {
+            Button::SetAsCurrentSeasonYes { season_uuid: _ } => "Yes".to_string(),
+            Button::SetAsCurrentSeasonNo { season_uuid: _ } => "No".to_string(),
+        }
+    }
+
+    pub fn style(&self) -> ButtonStyle {
+        match self {
+            Button::SetAsCurrentSeasonYes { season_uuid: _ } => ButtonStyle::Primary,
+            Button::SetAsCurrentSeasonNo { season_uuid: _ } => ButtonStyle::Secondary,
+        }
+    }
+
+    pub fn id(&self) -> String {
+        match self {
+            Button::SetAsCurrentSeasonYes { season_uuid } => {
+                format!("set_as_current_season_yes:{}", season_uuid)
+            }
+            Button::SetAsCurrentSeasonNo { season_uuid } => {
+                format!("set_as_current_season_no:{}", season_uuid)
+            }
+        }
+        .to_string()
+    }
+}
+
+impl Into<CreateButton> for Button {
+    fn into(self) -> CreateButton {
+        CreateButton::new(self.id())
+            .style(self.style())
+            .label(self.label())
+            .custom_id(self.id())
+    }
+}
+
+impl FromStr for Button {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // extract season_uuid from s
+        let parts = s.split(":").collect::<Vec<&str>>();
+        if parts.len() != 2 {
+            return Err("Invalid format".to_string());
+        }
+        let action = parts.get(0).ok_or("Invalid")?;
+        let season_uuid = parts.get(1).ok_or("Invalid")?;
+        match *action {
+            "set_as_current_season_yes" => Ok(Button::SetAsCurrentSeasonYes {
+                season_uuid: season_uuid.to_string(),
+            }),
+            "set_as_current_season_no" => Ok(Button::SetAsCurrentSeasonNo {
+                season_uuid: season_uuid.to_string(),
+            }),
+            _ => Err("Invalid action".to_string()),
+        }
     }
 }

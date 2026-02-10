@@ -110,3 +110,21 @@ pub async fn pick_color(ctx: Context<'_>) -> Result<(), Error> {
     }
     Ok(())
 }
+
+#[poise::command(prefix_command, track_edits, owners_only, slash_command)]
+pub async fn test_button_multiple(ctx: Context<'_>) -> Result<(), Error> {
+    let button1 = serenity_prelude::CreateButton::new("Test Button")
+        .style(serenity_prelude::ButtonStyle::Primary)
+        .label("Test Button");
+
+    let button2 = serenity_prelude::CreateButton::new("Test Button 2")
+        .style(serenity_prelude::ButtonStyle::Secondary)
+        .label("Test Button 2");
+
+    ctx.send(
+        poise::CreateReply::default()
+            .components(vec![CreateActionRow::Buttons(vec![button1, button2])]),
+    )
+    .await?;
+    Ok(())
+}

@@ -41,6 +41,7 @@ async fn main() {
             commands::register_org(),
             commands::register_member(),
             commands::create_season(),
+            commands::test_button_multiple(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some(prefix),
@@ -67,7 +68,7 @@ async fn main() {
                 match event {
                     FullEvent::InteractionCreate { interaction } => {
                         let db_service = framework.user_data;
-                        handle_interaction(db_service, ctx, interaction).await
+                        handle_interaction(db_service, ctx, interaction).await;
                     }
                     _ => {}
                 }
