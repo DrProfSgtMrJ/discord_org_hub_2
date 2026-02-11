@@ -40,8 +40,8 @@ async fn main() {
             commands::register_user(),
             commands::register_org(),
             commands::register_member(),
-            commands::create_season(),
-            commands::test_button_multiple(),
+            commands::register_members(),
+            commands::create_season(), //commands::register_members()
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some(prefix),

@@ -1,23 +1,29 @@
 use std::str::FromStr;
 
 use poise::serenity_prelude::{
-    ButtonStyle, CreateActionRow, CreateButton, CreateInputText, CreateModal, InputTextStyle,
+    ButtonStyle, CreateActionRow, CreateButton, CreateInputText, CreateModal, CreateSelectMenu,
+    CreateSelectMenuKind, CreateSelectMenuOption, InputTextStyle,
 };
 
 #[derive(Debug)]
 pub enum Modal {
     CreateSeason,
+    AddMembersToSeason,
 }
 
 impl Modal {
     pub fn title(&self) -> String {
         match self {
             Modal::CreateSeason => "Create Season".to_string(),
+            Modal::AddMembersToSeason => "Add Members To Season".to_string(),
         }
     }
 
     pub fn id(&self) -> String {
-        "season_create_modal".to_string()
+        match self {
+            Modal::CreateSeason => "season_create_modal".to_string(),
+            Modal::AddMembersToSeason => "member_add_to_season_modal".to_string(),
+        }
     }
 }
 
@@ -27,6 +33,7 @@ impl FromStr for Modal {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "season_create_modal" => Ok(Modal::CreateSeason),
+            "member_add_to_season_modal" => Ok(Modal::AddMembersToSeason),
             _ => Err("Invalid modal ID".to_string()),
         }
     }
@@ -36,6 +43,7 @@ impl Into<CreateModal> for Modal {
     fn into(self) -> CreateModal {
         match self {
             Modal::CreateSeason => CreateModal::new(self.id(), self.title()),
+            Modal::AddMembersToSeason => CreateModal::new(self.id(), self.title()),
         }
     }
 }
@@ -185,6 +193,55 @@ impl FromStr for Button {
                 season_uuid: season_uuid.to_string(),
             }),
             _ => Err("Invalid action".to_string()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SelectMenu {
+    SeasonSelectMenu(Vec<entity::season::Model>),
+}
+
+impl SelectMenu {
+    pub fn id(&self) -> String {
+        match self {
+            SelectMenu::SeasonSelectMenu(_) => "season_select_menu".to_string(),
+        }
+    }
+
+    pub fn placeholder(&self) -> &str {
+        match self {
+            SelectMenu::SeasonSelectMenu(_) => "Select Season to register members to...",
+        }
+    }
+
+    pub fn options(&self) -> Vec<CreateSelectMenuOption> {
+        match self {
+            SelectMenu::SeasonSelectMenu(seasons) => seasons
+                .iter()
+                .map(|season| {
+                    CreateSelectMenuOption::new(
+                        format!("{} (Started: {:?})", season.title, season.start_date),
+                        season.id.clone(),
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl Into<CreateSelectMenu> for SelectMenu {
+    fn into(self) -> CreateSelectMenu {
+        match &self {
+            SelectMenu::SeasonSelectMenu(_) => CreateSelectMenu::new(
+                self.id(),
+                CreateSelectMenuKind::String {
+                    options: self.options(),
+                },
+            )
+            .placeholder(self.placeholder())
+            .min_values(1)
+            .max_values(1),
         }
     }
 }

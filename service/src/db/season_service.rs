@@ -1,9 +1,9 @@
 use chrono::NaiveDate;
 use entity::season::{
-    ActiveModel as SeasonActiveModel, Entity as SeasonEntity, Model as SeasonModel,
+    self, ActiveModel as SeasonActiveModel, Entity as SeasonEntity, Model as SeasonModel,
 };
 
-use sea_orm::{ActiveModelTrait, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::DbService;
@@ -20,6 +20,7 @@ pub trait SeasonService {
     ) -> Result<SeasonModel, DbErr>;
 
     async fn get_season_by_id(&self, season_uuid: &str) -> Result<Option<SeasonModel>, DbErr>;
+    async fn get_seasons_by_org_id(&self, org_id: Uuid) -> Result<Vec<SeasonModel>, DbErr>;
 }
 
 #[async_trait::async_trait]
@@ -54,6 +55,18 @@ impl SeasonService for DbService {
             }
         } else {
             Err(DbErr::Custom("Invalid UUID format".to_string()))
+        }
+    }
+
+    async fn get_seasons_by_org_id(&self, org_id: Uuid) -> Result<Vec<SeasonModel>, DbErr> {
+        match self.get_connection() {
+            Ok(conn) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .all(conn)
+                    .await
+            }
+            Err(err) => Err(err),
         }
     }
 }

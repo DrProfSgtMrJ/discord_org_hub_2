@@ -1225,6 +1225,7 @@ dependencies = [
  "sea-orm",
  "service",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
