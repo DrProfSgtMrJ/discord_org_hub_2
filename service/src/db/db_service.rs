@@ -1,8 +1,16 @@
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use crate::DbConfig;
 
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
+
+pub enum OrderBy<T>
+where
+    T: sea_orm::IntoSimpleExpr,
+{
+    Asc { column: T },
+    Desc { column: T },
+}
 
 #[derive(Debug, Clone)]
 pub struct DbService {

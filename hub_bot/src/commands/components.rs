@@ -2,27 +2,24 @@ use std::str::FromStr;
 
 use poise::serenity_prelude::{
     ButtonStyle, CreateActionRow, CreateButton, CreateInputText, CreateModal, CreateSelectMenu,
-    CreateSelectMenuKind, CreateSelectMenuOption, InputTextStyle,
+    CreateSelectMenuKind, CreateSelectMenuOption, InputTextStyle, Member, User, UserId,
 };
 
 #[derive(Debug)]
 pub enum Modal {
     CreateSeason,
-    AddMembersToSeason,
 }
 
 impl Modal {
     pub fn title(&self) -> String {
         match self {
             Modal::CreateSeason => "Create Season".to_string(),
-            Modal::AddMembersToSeason => "Add Members To Season".to_string(),
         }
     }
 
     pub fn id(&self) -> String {
         match self {
             Modal::CreateSeason => "season_create_modal".to_string(),
-            Modal::AddMembersToSeason => "member_add_to_season_modal".to_string(),
         }
     }
 }
@@ -33,7 +30,6 @@ impl FromStr for Modal {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "season_create_modal" => Ok(Modal::CreateSeason),
-            "member_add_to_season_modal" => Ok(Modal::AddMembersToSeason),
             _ => Err("Invalid modal ID".to_string()),
         }
     }
@@ -43,12 +39,12 @@ impl Into<CreateModal> for Modal {
     fn into(self) -> CreateModal {
         match self {
             Modal::CreateSeason => CreateModal::new(self.id(), self.title()),
-            Modal::AddMembersToSeason => CreateModal::new(self.id(), self.title()),
         }
     }
 }
 
 #[derive(Debug)]
+#[warn(clippy::enum_variant_names)]
 pub enum InputText {
     SeasonTitle,
     SeasonNumPlayers,
@@ -184,13 +180,13 @@ impl FromStr for Button {
             return Err("Invalid format".to_string());
         }
         let action = parts.get(0).ok_or("Invalid")?;
-        let season_uuid = parts.get(1).ok_or("Invalid")?;
+        let param = parts.get(1).ok_or("Invalid")?;
         match *action {
             "set_as_current_season_yes" => Ok(Button::SetAsCurrentSeasonYes {
-                season_uuid: season_uuid.to_string(),
+                season_uuid: param.to_string(),
             }),
             "set_as_current_season_no" => Ok(Button::SetAsCurrentSeasonNo {
-                season_uuid: season_uuid.to_string(),
+                season_uuid: param.to_string(),
             }),
             _ => Err("Invalid action".to_string()),
         }
@@ -200,18 +196,21 @@ impl FromStr for Button {
 #[derive(Debug)]
 pub enum SelectMenu {
     SeasonSelectMenu(Vec<entity::season::Model>),
+    MemberSelectMenu(Vec<entity::member::Model>),
 }
 
 impl SelectMenu {
     pub fn id(&self) -> String {
         match self {
             SelectMenu::SeasonSelectMenu(_) => "season_select_menu".to_string(),
+            SelectMenu::MemberSelectMenu(_) => "member_select_menu".to_string(),
         }
     }
 
     pub fn placeholder(&self) -> &str {
         match self {
             SelectMenu::SeasonSelectMenu(_) => "Select Season to register members to...",
+            SelectMenu::MemberSelectMenu(_) => "Select Members to register to...",
         }
     }
 
@@ -226,22 +225,46 @@ impl SelectMenu {
                     )
                 })
                 .collect(),
+            SelectMenu::MemberSelectMenu(members) => members
+                .iter()
+                .map(|member| {
+                    CreateSelectMenuOption::new(format!("{}", member.id), member.id.clone())
+                })
+                .collect(),
+        }
+    }
+
+    pub fn kind(&self) -> CreateSelectMenuKind {
+        match self {
+            SelectMenu::SeasonSelectMenu(_) => CreateSelectMenuKind::String {
+                options: self.options(),
+            },
+            SelectMenu::MemberSelectMenu(_) => CreateSelectMenuKind::String {
+                options: self.options(),
+            },
+        }
+    }
+
+    pub fn min_values(&self) -> u8 {
+        match self {
+            SelectMenu::SeasonSelectMenu(_) => 1,
+            SelectMenu::MemberSelectMenu(_) => 1,
+        }
+    }
+
+    pub fn max_values(&self) -> u8 {
+        match self {
+            SelectMenu::SeasonSelectMenu(_) => 1,
+            SelectMenu::MemberSelectMenu(_) => 1,
         }
     }
 }
 
 impl Into<CreateSelectMenu> for SelectMenu {
     fn into(self) -> CreateSelectMenu {
-        match &self {
-            SelectMenu::SeasonSelectMenu(_) => CreateSelectMenu::new(
-                self.id(),
-                CreateSelectMenuKind::String {
-                    options: self.options(),
-                },
-            )
+        CreateSelectMenu::new(self.id(), self.kind())
             .placeholder(self.placeholder())
-            .min_values(1)
-            .max_values(1),
-        }
+            .min_values(self.min_values())
+            .max_values(self.max_values())
     }
 }

@@ -39,9 +39,9 @@ async fn main() {
         commands: vec![
             commands::register_user(),
             commands::register_org(),
+            commands::create_season(),
             commands::register_member(),
-            commands::register_members(),
-            commands::create_season(), //commands::register_members()
+            commands::seasons(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some(prefix),
@@ -65,12 +65,9 @@ async fn main() {
                     "Got an event in event handler: {:?}",
                     event.snake_case_name()
                 );
-                match event {
-                    FullEvent::InteractionCreate { interaction } => {
-                        let db_service = framework.user_data;
-                        handle_interaction(db_service, ctx, interaction).await;
-                    }
-                    _ => {}
+                if let FullEvent::InteractionCreate { interaction } = event {
+                    let db_service = framework.user_data;
+                    handle_interaction(db_service, ctx, interaction).await;
                 }
                 Ok(())
             })

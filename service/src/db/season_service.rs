@@ -1,12 +1,24 @@
+use std::marker::PhantomData;
+
 use chrono::NaiveDate;
 use entity::season::{
     self, ActiveModel as SeasonActiveModel, Entity as SeasonEntity, Model as SeasonModel,
 };
 
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
-use crate::DbService;
+use crate::{DbService, OrderBy};
+
+impl OrderBy<season::Column> {
+    pub fn asc(column: season::Column) -> Self {
+        OrderBy::Asc { column }
+    }
+
+    pub fn desc(column: season::Column) -> Self {
+        OrderBy::Desc { column }
+    }
+}
 
 #[async_trait::async_trait]
 pub trait SeasonService {
@@ -20,7 +32,11 @@ pub trait SeasonService {
     ) -> Result<SeasonModel, DbErr>;
 
     async fn get_season_by_id(&self, season_uuid: &str) -> Result<Option<SeasonModel>, DbErr>;
-    async fn get_seasons_by_org_id(&self, org_id: Uuid) -> Result<Vec<SeasonModel>, DbErr>;
+    async fn get_seasons_by_org_id(
+        &self,
+        org_id: Uuid,
+        order_by: Option<OrderBy<season::Column>>,
+    ) -> Result<Vec<SeasonModel>, DbErr>;
 }
 
 #[async_trait::async_trait]
@@ -58,15 +74,33 @@ impl SeasonService for DbService {
         }
     }
 
-    async fn get_seasons_by_org_id(&self, org_id: Uuid) -> Result<Vec<SeasonModel>, DbErr> {
-        match self.get_connection() {
-            Ok(conn) => {
+    async fn get_seasons_by_org_id(
+        &self,
+        org_id: Uuid,
+        order_by: Option<OrderBy<season::Column>>,
+    ) -> Result<Vec<SeasonModel>, DbErr> {
+        let conn = self.get_connection()?;
+        match order_by {
+            Some(OrderBy::Asc { column }) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .order_by(column, sea_orm::Order::Asc)
+                    .all(conn)
+                    .await
+            }
+            Some(OrderBy::Desc { column }) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .order_by(column, sea_orm::Order::Desc)
+                    .all(conn)
+                    .await
+            }
+            None => {
                 SeasonEntity::find()
                     .filter(season::Column::OrgId.eq(org_id))
                     .all(conn)
                     .await
             }
-            Err(err) => Err(err),
         }
     }
 }

@@ -11,13 +11,9 @@ use service::DbService;
 pub async fn handle_interaction(db_service: &DbService, ctx: &Context, interaction: &Interaction) {
     match interaction {
         Interaction::Modal(inter) => {
-            match Modal::from_str(&inter.data.custom_id) {
-                Ok(Modal::CreateSeason) => {
-                    // Handle CreateSeason modal interaction
-                    let _ = handle_create_season_interaction(db_service, ctx, inter).await;
-                    println!("Got Create Season");
-                }
-                _ => {}
+            if let Ok(Modal::CreateSeason) = Modal::from_str(&inter.data.custom_id) {
+                let _ = handle_create_season_interaction(db_service, ctx, inter).await;
+                println!("Got Create Season");
             }
             //println!("Modal interaction received: {}", inter.)
         }

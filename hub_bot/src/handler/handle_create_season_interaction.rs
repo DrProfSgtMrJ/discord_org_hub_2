@@ -3,12 +3,12 @@ use std::str::FromStr;
 use chrono::NaiveDate;
 use poise::serenity_prelude::{
     ActionRow, ActionRowComponent, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage, ModalInteraction,
+    CreateInteractionResponse, CreateInteractionResponseMessage, InputText, ModalInteraction,
 };
 
 use crate::Error;
 
-use crate::commands::{Button, InputText};
+use crate::commands::{Button, InputText as InputTextComponent};
 use service::{DbService, OrgService, SeasonService};
 
 #[derive(Debug)]
@@ -109,26 +109,24 @@ fn extract_season_form_data(components: &Vec<ActionRow>) -> Result<SeasonFormDat
 
     for row in components {
         for component in &row.components {
-            match component {
-                ActionRowComponent::InputText(input_text) => {
-                    // Handle input text component
-                    if let Ok(input) = InputText::from_str(&input_text.custom_id.as_str()) {
-                        match input {
-                            InputText::SeasonTitle => title = input_text.value.clone(),
-                            InputText::SeasonNumPlayers => num_players = input_text.value.clone(),
-                            InputText::SeasonStartDate => start_date = input_text.value.clone(),
-                            InputText::SeasonEndDate => {
-                                // Need to make sure end_date is None if it is empty
-                                if let Some(ref value) = input_text.value {
-                                    if !value.trim().is_empty() {
-                                        end_date = Some(value.clone())
-                                    }
-                                }
-                            }
+            if let ActionRowComponent::InputText(input_text) = component {
+                match InputTextComponent::from_str(&input_text.custom_id) {
+                    Ok(InputTextComponent::SeasonEndDate) => {
+                        if let Some(ref value) = input_text.value
+                            && !value.trim().is_empty()
+                        {
+                            end_date = Some(value.clone())
                         }
                     }
+                    Ok(InputTextComponent::SeasonNumPlayers) => {
+                        num_players = input_text.value.clone()
+                    }
+                    Ok(InputTextComponent::SeasonStartDate) => {
+                        start_date = input_text.value.clone()
+                    }
+                    Ok(InputTextComponent::SeasonTitle) => title = input_text.value.clone(),
+                    Err(e) => return Err(Error::from(e)),
                 }
-                _ => {}
             }
         }
     }
@@ -145,7 +143,7 @@ fn parse_season_form_data(season_form_data: &SeasonFormData) -> Result<SeasonPar
     println!("Parsing season form data: {:?}", season_form_data);
     if let Ok(start_date) = NaiveDate::parse_from_str(&season_form_data.start_date, "%Y-%m-%d") {
         let end_date: Option<NaiveDate> = match &season_form_data.end_data {
-            Some(end_date) => match NaiveDate::parse_from_str(&end_date, "%Y-%m-%d") {
+            Some(end_date) => match NaiveDate::parse_from_str(end_date, "%Y-%m-%d") {
                 Ok(date) => {
                     if start_date > date {
                         println!("End date must be after start date");
@@ -163,13 +161,13 @@ fn parse_season_form_data(season_form_data: &SeasonFormData) -> Result<SeasonPar
             .map_err(|_| Error::from("Invalid number of players"))?;
         Ok(SeasonParsedData {
             title: season_form_data.title.clone(),
-            num_players: num_players,
-            start_date: start_date,
-            end_date: end_date,
+            num_players,
+            start_date,
+            end_date,
         })
     } else {
         println!("Invalid start date");
-        return Err(Error::from("Invalid Start Date"));
+        Err(Error::from("Invalid Start Date"))
     }
 }
 
