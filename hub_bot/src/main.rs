@@ -43,6 +43,7 @@ async fn main() {
             commands::register_member(),
             commands::register_members(),
             commands::seasons(),
+            commands::add_to_season(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some(prefix),
