@@ -47,43 +47,39 @@ async fn setup_create_season_modal(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(track_edits, slash_command)]
 pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
     let db_service = ctx.data();
-    if let Some(guild_id) = get_discord_build_id_from_context(&ctx) {
-        if let Some(org) = db_service.get_org_by_discord_id(guild_id.as_str()).await? {
-            let org_id = org.id;
-            let order_by = OrderBy::asc(entity::season::Column::StartDate);
-            let seasons = db_service
-                .get_seasons_by_org_id(org_id, Some(order_by))
-                .await?;
+    if let Some(guild_id) = get_discord_build_id_from_context(&ctx)
+        && let Some(org) = db_service.get_org_by_discord_id(&guild_id).await?
+    {
+        let org_id = org.id;
+        let order_by = OrderBy::asc(entity::season::Column::StartDate);
+        let seasons = db_service
+            .get_seasons_by_org_id(org_id, Some(order_by))
+            .await?;
 
-            let mut season_embeded = CreateEmbed::default();
-            let mut description = String::new();
-            description.push_str(&format!(
-                "| {:^2} | {:^30} | {:^10} | {:^10} | {:^7} |\n",
-                "ID", "Title", "Start Date", "End Date", "Players"
-            ));
-            description.push_str("------------------------------------------------\n");
+        let mut season_embeded = CreateEmbed::default();
+        let mut description = String::new();
 
-            for (i, season) in seasons.iter().enumerate() {
-                description.push_str(
-                    format!(
-                        "| {:^2} | {:^30} | {:^10} | {:^10} | {:^7} |\n",
-                        i + 1,
-                        season.title,
-                        season.start_date,
-                        season
-                            .end_date
-                            .map_or("-".to_string(), |date| date.to_string()),
-                        season.num_players
-                    )
-                    .as_str(),
-                );
-                description.push_str("------------------------------------------------\n");
-            }
-            season_embeded = season_embeded.description(description);
-            ctx.send(CreateReply::default().embed(season_embeded))
-                .await?;
+        for (i, season) in seasons.iter().enumerate() {
+            let date_range = match season.end_date {
+                Some(end) => format!("{} - {}", season.start_date, end),
+                None => format!("{} - Present", season.start_date),
+            };
+
+            description.push_str(
+                format!("**{}** • {} \n📅 {}\n\n", i + 1, season.title, date_range,).as_str(),
+            );
         }
+        season_embeded = season_embeded.description(description);
+        ctx.send(CreateReply::default().embed(season_embeded))
+            .await?;
     }
-    //let seasons = db_service.get_seasons_by_org_id(org_id)
     Ok(())
+}
+
+/// Get Season Info
+///
+/// Enter !season_info <season_id>
+#[poise::command(track_edits, slash_command)]
+pub async fn season_info(ctx: Context<'_>, season_id: Option<u64>) -> Result<(), Error> {
+    todo!()
 }

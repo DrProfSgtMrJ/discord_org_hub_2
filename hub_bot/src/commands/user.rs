@@ -1,20 +1,18 @@
 use super::common::is_unique_violation;
-use poise::serenity_prelude::Member;
 use service::UserService;
 
 use crate::{Context, Error};
 
-/// Command to register a new user
+/// Command to register yourself to org discord hub!
 ///
-/// Enter !register_user @<member> <timezone>
+/// Enter !join  <timezone>
 #[poise::command(prefix_command, track_edits, owners_only, slash_command)]
-pub async fn register_user(
+pub async fn join(
     ctx: Context<'_>,
-    #[description = "The member to register"] member: Member,
-    #[description = "The timezone of the user (e.g. PST, EST, etc.)"] timezone: Option<String>,
+    #[description = "Your timezone (e.g. PST, EST, etc.)"] timezone: Option<String>,
 ) -> Result<(), Error> {
     //Adds a new User to the database
-    let new_user = member.user;
+    let new_user = ctx.author();
     let display_name = new_user.display_name();
 
     let discord_id = new_user.id.get().to_string();

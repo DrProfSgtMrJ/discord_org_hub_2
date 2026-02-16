@@ -3,7 +3,7 @@ use std::str::FromStr;
 use chrono::NaiveDate;
 use poise::serenity_prelude::{
     ActionRow, ActionRowComponent, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage, InputText, ModalInteraction,
+    CreateInteractionResponse, CreateInteractionResponseMessage, ModalInteraction,
 };
 
 use crate::Error;
@@ -69,7 +69,15 @@ pub async fn handle_create_season_interaction(
                         }
                     }
                 } else {
-                    send_error_response(ctx, interaction, "Failed to create season").await?;
+                    send_error_response(
+                        ctx,
+                        interaction,
+                        &format!(
+                            "Failed to create season. Unable to find Org with ID {}",
+                            org_id
+                        ),
+                    )
+                    .await?;
                 }
             }
         } else {

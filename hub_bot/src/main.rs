@@ -37,10 +37,11 @@ async fn main() {
 
     let options = poise::FrameworkOptions {
         commands: vec![
-            commands::register_user(),
+            commands::join(),
             commands::register_org(),
             commands::create_season(),
             commands::register_member(),
+            commands::register_members(),
             commands::seasons(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
