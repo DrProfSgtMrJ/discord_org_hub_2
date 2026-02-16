@@ -2,6 +2,7 @@ use super::common::is_unique_violation;
 use service::UserService;
 
 use crate::{Context, Error};
+use poise::serenity_prelude::{Member, User};
 
 /// Command to register yourself to org discord hub!
 ///
@@ -13,10 +14,31 @@ pub async fn join(
 ) -> Result<(), Error> {
     //Adds a new User to the database
     let new_user = ctx.author();
-    let display_name = new_user.display_name();
+    register_user_internal(ctx, new_user, timezone).await
+}
 
-    let discord_id = new_user.id.get().to_string();
-    let avatar_url = ctx.author().avatar_url();
+/// Command to register a user to org discord hub!
+///
+/// Enter !register_user @<member>  <timezone>
+#[poise::command(prefix_command, track_edits, owners_only, slash_command)]
+pub async fn register_user(
+    ctx: Context<'_>,
+    #[description = "The member to register"] member: Member,
+    #[description = "Your timezone (e.g. PST, EST, etc.)"] timezone: Option<String>,
+) -> Result<(), Error> {
+    let user = member.user;
+    register_user_internal(ctx, &user, timezone).await
+}
+
+async fn register_user_internal(
+    ctx: Context<'_>,
+    user: &User,
+    timezone: Option<String>,
+) -> Result<(), Error> {
+    let display_name = user.display_name();
+
+    let discord_id = user.id.get().to_string();
+    let avatar_url = user.avatar_url();
 
     let db_service = ctx.data();
 

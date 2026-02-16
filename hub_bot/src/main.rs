@@ -45,6 +45,7 @@ async fn main() {
             commands::seasons(),
             commands::add_to_season(),
             commands::season_info(),
+            commands::register_user(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some(prefix),
@@ -68,9 +69,15 @@ async fn main() {
                     "Got an event in event handler: {:?}",
                     event.snake_case_name()
                 );
-                if let FullEvent::InteractionCreate { interaction } = event {
-                    let db_service = framework.user_data;
-                    handle_interaction(db_service, ctx, interaction).await;
+                match event {
+                    FullEvent::InteractionCreate { interaction } => {
+                        let db_service = framework.user_data;
+                        handle_interaction(db_service, ctx, interaction).await;
+                    }
+                    FullEvent::GuildCreate { guild, is_new } => {
+                        println!("Guild created: {}, is_new: {:?}", guild.name, is_new);
+                    }
+                    _ => {}
                 }
                 Ok(())
             })
