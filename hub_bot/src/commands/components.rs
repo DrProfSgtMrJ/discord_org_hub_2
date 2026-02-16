@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use poise::serenity_prelude::{
     ButtonStyle, CreateActionRow, CreateButton, CreateInputText, CreateModal, CreateSelectMenu,
-    CreateSelectMenuKind, CreateSelectMenuOption, InputTextStyle, Member, User, UserId,
+    CreateSelectMenuKind, CreateSelectMenuOption, InputTextStyle,
 };
 
 #[derive(Debug)]
@@ -35,10 +35,10 @@ impl FromStr for Modal {
     }
 }
 
-impl Into<CreateModal> for Modal {
-    fn into(self) -> CreateModal {
-        match self {
-            Modal::CreateSeason => CreateModal::new(self.id(), self.title()),
+impl From<Modal> for CreateModal {
+    fn from(modal: Modal) -> Self {
+        match modal {
+            Modal::CreateSeason => CreateModal::new(modal.id(), modal.title()),
         }
     }
 }
@@ -162,12 +162,12 @@ impl Button {
     }
 }
 
-impl Into<CreateButton> for Button {
-    fn into(self) -> CreateButton {
-        CreateButton::new(self.id())
-            .style(self.style())
-            .label(self.label())
-            .custom_id(self.id())
+impl From<Button> for CreateButton {
+    fn from(button: Button) -> Self {
+        CreateButton::new(button.id())
+            .style(button.style())
+            .label(button.label())
+            .custom_id(button.id())
     }
 }
 
@@ -179,7 +179,7 @@ impl FromStr for Button {
         if parts.len() != 2 {
             return Err("Invalid format".to_string());
         }
-        let action = parts.get(0).ok_or("Invalid")?;
+        let action = parts.first().ok_or("Invalid")?;
         let param = parts.get(1).ok_or("Invalid")?;
         match *action {
             "set_as_current_season_yes" => Ok(Button::SetAsCurrentSeasonYes {
@@ -221,15 +221,13 @@ impl SelectMenu {
                 .map(|season| {
                     CreateSelectMenuOption::new(
                         format!("{} (Started: {:?})", season.title, season.start_date),
-                        season.id.clone(),
+                        season.id,
                     )
                 })
                 .collect(),
             SelectMenu::MemberSelectMenu(members) => members
                 .iter()
-                .map(|member| {
-                    CreateSelectMenuOption::new(format!("{}", member.id), member.id.clone())
-                })
+                .map(|member| CreateSelectMenuOption::new(format!("{}", member.id), member.id))
                 .collect(),
         }
     }
@@ -260,11 +258,11 @@ impl SelectMenu {
     }
 }
 
-impl Into<CreateSelectMenu> for SelectMenu {
-    fn into(self) -> CreateSelectMenu {
-        CreateSelectMenu::new(self.id(), self.kind())
-            .placeholder(self.placeholder())
-            .min_values(self.min_values())
-            .max_values(self.max_values())
+impl From<SelectMenu> for CreateSelectMenu {
+    fn from(select_menu: SelectMenu) -> Self {
+        CreateSelectMenu::new(select_menu.id(), select_menu.kind())
+            .placeholder(select_menu.placeholder())
+            .min_values(select_menu.min_values())
+            .max_values(select_menu.max_values())
     }
 }

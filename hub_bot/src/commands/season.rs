@@ -1,15 +1,13 @@
 use crate::commands::common::get_discord_build_id_from_context;
 use poise::CreateReply;
-use poise::serenity_prelude::Color;
 use poise::serenity_prelude::CreateActionRow;
 use poise::serenity_prelude::CreateEmbed;
 use poise::serenity_prelude::CreateInteractionResponse;
-use poise::serenity_prelude::CreateInteractionResponseMessage;
 use poise::serenity_prelude::CreateModal;
-use poise::serenity_prelude::CreateSelectMenu;
+use service::MemberService;
 use service::{OrderBy, OrgService, SeasonService};
 
-use super::components::{InputText, Modal, SelectMenu};
+use super::components::{InputText, Modal};
 use crate::{Context, Error};
 
 #[poise::command(track_edits, owners_only, slash_command)]
@@ -51,7 +49,9 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
         && let Some(org) = db_service.get_org_by_discord_id(&guild_id).await?
     {
         let org_id = org.id;
-        let order_by = OrderBy::asc(entity::season::Column::StartDate);
+        let order_by = OrderBy::Asc {
+            column: entity::season::Column::StartDate,
+        };
         let seasons = db_service
             .get_seasons_by_org_id(org_id, Some(order_by))
             .await?;
@@ -60,14 +60,9 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
         let mut description = String::new();
 
         for (i, season) in seasons.iter().enumerate() {
-            let date_range = match season.end_date {
-                Some(end) => format!("{} - {}", season.start_date, end),
-                None => format!("{} - Present", season.start_date),
-            };
+            let formated_desc_str = format_season_description(i + 1, season);
 
-            description.push_str(
-                format!("**{}** • {} \n📅 {}\n\n", i + 1, season.title, date_range,).as_str(),
-            );
+            description.push_str(&formated_desc_str);
         }
         season_embeded = season_embeded.description(description);
         ctx.send(CreateReply::default().embed(season_embeded))
@@ -76,10 +71,90 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Get Season Info
+/// Get Season Info (either current or latest)
 ///
 /// Enter !season_info <season_id>
 #[poise::command(track_edits, slash_command)]
-pub async fn season_info(ctx: Context<'_>, season_id: Option<u64>) -> Result<(), Error> {
-    todo!()
+pub async fn season_info(
+    ctx: Context<'_>,
+    #[description = "Season ID as found in /seasons"] season_id: Option<usize>,
+) -> Result<(), Error> {
+    let db_service = ctx.data();
+    if let Some(discord_guild_id) = get_discord_build_id_from_context(&ctx)
+        && let Some(org) = db_service.get_org_by_discord_id(&discord_guild_id).await?
+    {
+        let org_id = org.id;
+        let mut description = String::new();
+        let (season_uuid, num_players) = match season_id {
+            Some(id) => {
+                let order_by = OrderBy::Asc {
+                    column: entity::season::Column::StartDate,
+                };
+                let seasons = db_service
+                    .get_seasons_by_org_id(org_id, Some(order_by))
+                    .await?;
+                if let Some(selected_season) = seasons.get(id - 1) {
+                    description.push_str(&format_season_description(id, selected_season));
+                    (Some(selected_season.id), selected_season.num_players)
+                } else {
+                    ctx.reply("Invalid season ID").await?;
+                    (None, 0)
+                }
+            }
+            None => {
+                if let Some(current_season_uuid) = org.current_season_id
+                    && let Some(current_season) =
+                        db_service.get_season_by_uuid(current_season_uuid).await?
+                {
+                    description.push_str(&format_season_description(0, &current_season));
+                    (Some(current_season.id), current_season.num_players)
+                } else if let Some(latest_season) =
+                    db_service.get_latest_season_by_org_id(org_id).await?
+                {
+                    description.push_str(&format_season_description(0, &latest_season));
+                    (Some(latest_season.id), latest_season.num_players)
+                } else {
+                    ctx.reply("Unable to get season info").await?;
+                    (None, 0)
+                }
+            }
+        };
+        description.push_str("---------------------------------------\n");
+        if let Some(season_uuid) = season_uuid {
+            let order_by = OrderBy::AscNullsFirst {
+                column: entity::season_member::Column::Placement,
+            };
+            let members = db_service
+                .get_members_in_season(season_uuid, Some(order_by))
+                .await?;
+            for member in members {
+                println!("Got member {:?}", member.display_name);
+                description.push_str(&format!(
+                    "**{}**: \t{}/{}\n",
+                    member.display_name.unwrap_or_default(),
+                    member
+                        .season_member
+                        .placement
+                        .map_or("-".to_string(), |p| p.to_string()),
+                    num_players,
+                ));
+            }
+        }
+        let season_embeded = CreateEmbed::default().description(description);
+        ctx.send(CreateReply::default().embed(season_embeded))
+            .await?;
+    }
+
+    Ok(())
+}
+
+fn format_season_description(season_id: usize, season: &entity::season::Model) -> String {
+    let date_range = match season.end_date {
+        Some(end) => format!("{} - {}", season.start_date, end),
+        None => format!("{} - Present", season.start_date),
+    };
+    format!(
+        "**{}** • {} \n📅 {}\n\n",
+        season_id, season.title, date_range
+    )
 }

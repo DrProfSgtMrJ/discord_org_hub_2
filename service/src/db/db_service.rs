@@ -1,15 +1,19 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
 use crate::DbConfig;
 
-use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr, IntoSimpleExpr};
 
-pub enum OrderBy<T>
+pub enum OrderBy<C>
 where
-    T: sea_orm::IntoSimpleExpr,
+    C: IntoSimpleExpr,
 {
-    Asc { column: T },
-    Desc { column: T },
+    Asc { column: C },
+    Desc { column: C },
+    AscNullsFirst { column: C },
+    DescNullsFirst { column: C },
+    AscNullsLast { column: C },
+    DescNullsLast { column: C },
 }
 
 #[derive(Debug, Clone)]
@@ -22,7 +26,7 @@ impl DbService {
     pub fn from_env() -> Result<Self, DbErr> {
         let config = DbConfig::from_env()?;
         Ok(Self {
-            config: config,
+            config,
             connection: None,
         })
     }

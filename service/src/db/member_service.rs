@@ -2,14 +2,24 @@ use entity::discord_user::{self};
 use entity::member::{
     self, ActiveModel as MemberActiveModel, Entity as MemberEntity, Model as MemberModel,
 };
-use entity::org;
 use entity::season_member::{ActiveModel as SeasonMemberActiveModel, Model as SeasonMemberModel};
+use entity::{org, season_member};
+use sea_orm::sea_query::NullOrdering;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QuerySelect, RelationTrait,
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
+    RelationTrait,
 };
 use uuid::Uuid;
 
-use crate::DbService;
+use crate::{DbService, OrderBy};
+
+#[derive(Debug, Clone)]
+pub struct SeasonMemberWithName {
+    pub season_member: SeasonMemberModel,
+    pub member: Option<MemberModel>,
+    pub display_name: Option<String>,
+    pub avatar_url: Option<String>,
+}
 
 #[async_trait::async_trait]
 pub trait MemberService {
@@ -26,6 +36,12 @@ pub trait MemberService {
         season_id: Uuid,
         placement: Option<i32>,
     ) -> Result<SeasonMemberModel, DbErr>;
+
+    async fn get_members_in_season(
+        &self,
+        season_id: Uuid,
+        order_by: Option<OrderBy<season_member::Column>>,
+    ) -> Result<Vec<SeasonMemberWithName>, DbErr>;
 }
 
 #[async_trait::async_trait]
@@ -82,6 +98,154 @@ impl MemberService for DbService {
         let season_member = SeasonMemberActiveModel::new(season_id, member_id, placement);
         match self.get_connection() {
             Ok(conn) => season_member.insert(conn).await,
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn get_members_in_season(
+        &self,
+        season_id: Uuid,
+        order_by: Option<OrderBy<season_member::Column>>,
+    ) -> Result<Vec<SeasonMemberWithName>, DbErr> {
+        match self.get_connection() {
+            Ok(conn) => {
+                let results = match order_by {
+                    Some(OrderBy::Asc { column }) => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .order_by_asc(column)
+                            .all(conn)
+                            .await
+                    }
+                    Some(OrderBy::Desc { column }) => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .order_by_desc(column)
+                            .all(conn)
+                            .await
+                    }
+                    Some(OrderBy::AscNullsFirst { column }) => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .order_by_with_nulls(column, sea_orm::Order::Asc, NullOrdering::First)
+                            .all(conn)
+                            .await
+                    }
+                    Some(OrderBy::DescNullsFirst { column }) => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .order_by_with_nulls(column, sea_orm::Order::Desc, NullOrdering::First)
+                            .all(conn)
+                            .await
+                    }
+                    Some(OrderBy::DescNullsLast { column }) => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .order_by_with_nulls(column, sea_orm::Order::Desc, NullOrdering::Last)
+                            .all(conn)
+                            .await
+                    }
+                    Some(OrderBy::AscNullsLast { column }) => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .order_by_with_nulls(column, sea_orm::Order::Asc, NullOrdering::Last)
+                            .all(conn)
+                            .await
+                    }
+                    None => {
+                        season_member::Entity::find()
+                            .filter(season_member::Column::SeasonId.eq(season_id))
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                season_member::Relation::Member.def(),
+                            )
+                            .join(
+                                sea_orm::JoinType::InnerJoin,
+                                member::Relation::DiscordUser.def(),
+                            )
+                            .select_also(member::Entity)
+                            .select_also(discord_user::Entity)
+                            .all(conn)
+                            .await
+                    }
+                };
+                println!("Results: {:?}", results);
+                if let Ok(res) = results {
+                    let members: Vec<SeasonMemberWithName> = res
+                        .into_iter()
+                        .map(
+                            |(season_member, member, discord_user)| SeasonMemberWithName {
+                                season_member,
+                                member,
+                                display_name: discord_user.clone().map(|user| user.display_name),
+                                avatar_url: discord_user.clone().map(|user| user.avatar_url),
+                            },
+                        )
+                        .collect();
+                    return Ok(members);
+                }
+                Ok(vec![])
+            }
             Err(err) => Err(err),
         }
     }

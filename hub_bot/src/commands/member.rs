@@ -116,7 +116,9 @@ pub async fn add_to_season(
             .await?
         {
             let org_id = member.org_id;
-            let order_by = OrderBy::asc(entity::season::Column::StartDate);
+            let order_by = OrderBy::Asc {
+                column: entity::season::Column::StartDate,
+            };
             let seasons = db_service
                 .get_seasons_by_org_id(org_id, Some(order_by))
                 .await?;

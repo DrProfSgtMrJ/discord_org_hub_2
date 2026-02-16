@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use chrono::NaiveDate;
 use entity::season::{
     self, ActiveModel as SeasonActiveModel, Entity as SeasonEntity, Model as SeasonModel,
@@ -9,16 +7,6 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, Qu
 use uuid::Uuid;
 
 use crate::{DbService, OrderBy};
-
-impl OrderBy<season::Column> {
-    pub fn asc(column: season::Column) -> Self {
-        OrderBy::Asc { column }
-    }
-
-    pub fn desc(column: season::Column) -> Self {
-        OrderBy::Desc { column }
-    }
-}
 
 #[async_trait::async_trait]
 pub trait SeasonService {
@@ -32,11 +20,15 @@ pub trait SeasonService {
     ) -> Result<SeasonModel, DbErr>;
 
     async fn get_season_by_id(&self, season_uuid: &str) -> Result<Option<SeasonModel>, DbErr>;
+    async fn get_season_by_uuid(&self, season_uuid: Uuid) -> Result<Option<SeasonModel>, DbErr>;
     async fn get_seasons_by_org_id(
         &self,
         org_id: Uuid,
         order_by: Option<OrderBy<season::Column>>,
     ) -> Result<Vec<SeasonModel>, DbErr>;
+
+    async fn get_latest_season_by_org_id(&self, org_id: Uuid)
+    -> Result<Option<SeasonModel>, DbErr>;
 }
 
 #[async_trait::async_trait]
@@ -74,6 +66,13 @@ impl SeasonService for DbService {
         }
     }
 
+    async fn get_season_by_uuid(&self, season_uuid: Uuid) -> Result<Option<SeasonModel>, DbErr> {
+        match self.get_connection() {
+            Ok(conn) => SeasonEntity::find_by_id(season_uuid).one(conn).await,
+            Err(err) => Err(err),
+        }
+    }
+
     async fn get_seasons_by_org_id(
         &self,
         org_id: Uuid,
@@ -95,6 +94,50 @@ impl SeasonService for DbService {
                     .all(conn)
                     .await
             }
+            Some(OrderBy::AscNullsFirst { column }) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .order_by_with_nulls(
+                        column,
+                        sea_orm::Order::Asc,
+                        sea_orm::sea_query::NullOrdering::First,
+                    )
+                    .all(conn)
+                    .await
+            }
+            Some(OrderBy::DescNullsFirst { column }) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .order_by_with_nulls(
+                        column,
+                        sea_orm::Order::Desc,
+                        sea_orm::sea_query::NullOrdering::First,
+                    )
+                    .all(conn)
+                    .await
+            }
+            Some(OrderBy::AscNullsLast { column }) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .order_by_with_nulls(
+                        column,
+                        sea_orm::Order::Asc,
+                        sea_orm::sea_query::NullOrdering::Last,
+                    )
+                    .all(conn)
+                    .await
+            }
+            Some(OrderBy::DescNullsLast { column }) => {
+                SeasonEntity::find()
+                    .filter(season::Column::OrgId.eq(org_id))
+                    .order_by_with_nulls(
+                        column,
+                        sea_orm::Order::Desc,
+                        sea_orm::sea_query::NullOrdering::Last,
+                    )
+                    .all(conn)
+                    .await
+            }
             None => {
                 SeasonEntity::find()
                     .filter(season::Column::OrgId.eq(org_id))
@@ -102,5 +145,17 @@ impl SeasonService for DbService {
                     .await
             }
         }
+    }
+
+    async fn get_latest_season_by_org_id(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Option<SeasonModel>, DbErr> {
+        let conn = self.get_connection()?;
+        SeasonEntity::find()
+            .filter(season::Column::OrgId.eq(org_id))
+            .order_by(season::Column::StartDate, sea_orm::Order::Desc)
+            .one(conn)
+            .await
     }
 }
