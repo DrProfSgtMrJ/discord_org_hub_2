@@ -1,0 +1,21 @@
+#hero {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#hero-title-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+#hero-title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+

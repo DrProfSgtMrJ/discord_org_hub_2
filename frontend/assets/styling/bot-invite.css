@@ -1,0 +1,43 @@
+/* --- Bot Invite --- */
+#bot-invite {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    background-color: #5865f2;
+    /* Discord blurple */
+    border-radius: 12px;
+    text-decoration: none;
+    color: #ffffff;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+}
+
+#bot-invite:hover {
+    background-color: #4752c4;
+    transform: translateY(-2px);
+}
+
+#bot-invite-logo {
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+#bot-invite-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.bot-invite-heading {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.bot-invite-sub {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
