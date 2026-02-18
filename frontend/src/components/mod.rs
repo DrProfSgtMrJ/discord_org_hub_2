@@ -5,6 +5,9 @@
 mod bot_invite;
 mod hero;
 mod hero_header;
+mod why_section;
+
 pub use bot_invite::BotInvite;
 pub use hero::Hero;
 pub use hero_header::HeroHeader;
+pub use why_section::WhySection;

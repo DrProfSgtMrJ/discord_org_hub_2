@@ -1,4 +1,4 @@
-use crate::components::Hero;
+use crate::components::{Hero, WhySection};
 use dioxus::prelude::*;
 
 /// The Home page component that will be rendered when the current route is `[Route::Home]`
@@ -6,6 +6,6 @@ use dioxus::prelude::*;
 pub fn Home() -> Element {
     rsx! {
         Hero {}
-
+        WhySection {  }
     }
 }
