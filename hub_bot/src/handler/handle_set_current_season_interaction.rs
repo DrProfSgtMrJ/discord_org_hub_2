@@ -1,3 +1,4 @@
+use super::common::send_success_response;
 use poise::serenity_prelude::{
     ComponentInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
 };
@@ -18,14 +19,7 @@ pub async fn handle_set_current_season_interaction_yes(
                 .await
             {
                 Ok(_) => {
-                    interaction
-                        .create_response(
-                            &ctx.http,
-                            CreateInteractionResponse::Message(
-                                CreateInteractionResponseMessage::new().content("Success!"),
-                            ),
-                        )
-                        .await?;
+                    send_success_response(ctx, interaction).await?;
                 }
                 Err(err) => {
                     interaction

@@ -8,6 +8,7 @@ use poise::serenity_prelude::{
 
 use crate::Error;
 
+use super::common::send_modal_error_response;
 use crate::commands::{Button, InputText as InputTextComponent};
 use service::{DbService, OrgService, SeasonService};
 
@@ -64,12 +65,12 @@ pub async fn handle_create_season_interaction(
                             .await?;
                         }
                         Err(_) => {
-                            send_error_response(ctx, interaction, "Failed to create season")
+                            send_modal_error_response(ctx, interaction, "Failed to create season")
                                 .await?;
                         }
                     }
                 } else {
-                    send_error_response(
+                    send_modal_error_response(
                         ctx,
                         interaction,
                         &format!(
@@ -81,32 +82,13 @@ pub async fn handle_create_season_interaction(
                 }
             }
         } else {
-            send_error_response(ctx, interaction, "Invalid form data").await?;
+            send_modal_error_response(ctx, interaction, "Invalid form data").await?;
         }
     } else {
-        send_error_response(ctx, interaction, "Invalid form data").await?;
+        send_modal_error_response(ctx, interaction, "Invalid form data").await?;
     }
 
     Ok(())
-}
-
-async fn send_error_response(
-    ctx: &Context,
-    interaction: &ModalInteraction,
-    error_message: &str,
-) -> Result<(), Error> {
-    match interaction
-        .create_response(
-            &ctx.http,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content(error_message),
-            ),
-        )
-        .await
-    {
-        Ok(_) => Ok(()),
-        Err(err) => Err(Error::from(err)),
-    }
 }
 
 fn extract_season_form_data(components: &Vec<ActionRow>) -> Result<SeasonFormData, Error> {

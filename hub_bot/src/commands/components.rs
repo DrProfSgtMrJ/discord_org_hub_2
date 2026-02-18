@@ -117,21 +117,31 @@ impl FromStr for InputText {
     }
 }
 
-impl Into<CreateActionRow> for InputText {
-    fn into(self) -> CreateActionRow {
+impl From<InputText> for CreateActionRow {
+    fn from(input_text: InputText) -> Self {
         CreateActionRow::InputText(
-            CreateInputText::new(InputTextStyle::Short, self.title(), self.id())
-                .placeholder(self.placeholder())
-                .max_length(self.max_length())
-                .required(self.required()),
+            CreateInputText::new(InputTextStyle::Short, input_text.title(), input_text.id())
+                .placeholder(input_text.placeholder())
+                .max_length(input_text.max_length())
+                .required(input_text.required()),
         )
     }
 }
 
 #[derive(Debug)]
 pub enum Button {
-    SetAsCurrentSeasonYes { season_uuid: String },
-    SetAsCurrentSeasonNo { season_uuid: String },
+    SetAsCurrentSeasonYes {
+        season_uuid: String,
+    },
+    SetAsCurrentSeasonNo {
+        season_uuid: String,
+    },
+    RegisterOrgYes {
+        org_name: String,
+        guild_id: String,
+        owner_id: String,
+    },
+    RegisterOrgNo,
 }
 
 impl Button {
@@ -139,6 +149,12 @@ impl Button {
         match self {
             Button::SetAsCurrentSeasonYes { season_uuid: _ } => "Yes".to_string(),
             Button::SetAsCurrentSeasonNo { season_uuid: _ } => "No".to_string(),
+            Button::RegisterOrgYes {
+                org_name: _,
+                guild_id: _,
+                owner_id: _,
+            } => "Yes".to_string(),
+            Button::RegisterOrgNo => "No".to_string(),
         }
     }
 
@@ -146,6 +162,12 @@ impl Button {
         match self {
             Button::SetAsCurrentSeasonYes { season_uuid: _ } => ButtonStyle::Primary,
             Button::SetAsCurrentSeasonNo { season_uuid: _ } => ButtonStyle::Secondary,
+            Button::RegisterOrgYes {
+                org_name: _,
+                guild_id: _,
+                owner_id: _,
+            } => ButtonStyle::Primary,
+            Button::RegisterOrgNo => ButtonStyle::Secondary,
         }
     }
 
@@ -157,6 +179,14 @@ impl Button {
             Button::SetAsCurrentSeasonNo { season_uuid } => {
                 format!("set_as_current_season_no:{}", season_uuid)
             }
+            Button::RegisterOrgYes {
+                org_name,
+                guild_id,
+                owner_id,
+            } => {
+                format!("register_org_yes:{}:{}:{}", org_name, guild_id, owner_id)
+            }
+            Button::RegisterOrgNo => "register_org_no".to_string(),
         }
         .to_string()
     }
@@ -176,17 +206,19 @@ impl FromStr for Button {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // extract season_uuid from s
         let parts = s.split(":").collect::<Vec<&str>>();
-        if parts.len() != 2 {
-            return Err("Invalid format".to_string());
-        }
         let action = parts.first().ok_or("Invalid")?;
-        let param = parts.get(1).ok_or("Invalid")?;
         match *action {
+            "register_org_no" => Ok(Button::RegisterOrgNo),
             "set_as_current_season_yes" => Ok(Button::SetAsCurrentSeasonYes {
-                season_uuid: param.to_string(),
+                season_uuid: parts.get(1).ok_or("Invalid")?.to_string(),
             }),
             "set_as_current_season_no" => Ok(Button::SetAsCurrentSeasonNo {
-                season_uuid: param.to_string(),
+                season_uuid: parts.get(1).ok_or("Invalid")?.to_string(),
+            }),
+            "register_org_yes" => Ok(Button::RegisterOrgYes {
+                org_name: parts.get(1).ok_or("Invalid")?.to_string(),
+                guild_id: parts.get(2).ok_or("Invalid")?.to_string(),
+                owner_id: parts.get(3).ok_or("Invalid")?.to_string(),
             }),
             _ => Err("Invalid action".to_string()),
         }

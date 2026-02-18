@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use crate::commands::{Button, Modal};
 use crate::handler::{
-    handle_create_season_interaction, handle_set_current_season_interaction_no,
-    handle_set_current_season_interaction_yes,
+    handle_create_season_interaction, handle_register_org_interaction_yes,
+    handle_set_current_season_interaction_no, handle_set_current_season_interaction_yes,
 };
 use poise::serenity_prelude::{Context, Interaction};
 use service::DbService;
@@ -40,6 +40,22 @@ pub async fn handle_interaction(db_service: &DbService, ctx: &Context, interacti
                     )
                     .await;
                 }
+                Ok(Button::RegisterOrgYes {
+                    org_name,
+                    guild_id,
+                    owner_id,
+                }) => {
+                    let _ = handle_register_org_interaction_yes(
+                        db_service,
+                        ctx,
+                        inter,
+                        org_name.as_str(),
+                        guild_id.as_str(),
+                        owner_id.as_str(),
+                    )
+                    .await;
+                }
+                Ok(Button::RegisterOrgNo) => {}
                 _ => {}
             }
         }

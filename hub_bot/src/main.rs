@@ -6,7 +6,7 @@ use poise::serenity_prelude::{self as serenity, FullEvent};
 
 use service::DbService;
 
-use crate::handler::handle_interaction;
+use crate::handler::{handle_guild_create, handle_interaction};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, DbService, Error>;
@@ -75,6 +75,11 @@ async fn main() {
                         handle_interaction(db_service, ctx, interaction).await;
                     }
                     FullEvent::GuildCreate { guild, is_new } => {
+                        if let Some(new) = is_new
+                            && *new
+                        {
+                            handle_guild_create(ctx, guild).await;
+                        }
                         println!("Guild created: {}, is_new: {:?}", guild.name, is_new);
                     }
                     _ => {}
