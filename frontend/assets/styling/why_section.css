@@ -26,12 +26,45 @@
     border-radius: 14px;
     padding: 2rem 1.5rem;
     text-align: left;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
     transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
 .why-card:hover {
     border-color: #5865f2;
     transform: translateY(-3px);
+}
+
+.why-card-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.6rem;
+}
+
+.why-card-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.why-card-images {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.why-card-image-seasons-example {
+    width: 70%;
+    height: 100%;
+    border-radius: 8px;
+    flex-shrink: 0;
 }
 
 .why-icon {
@@ -41,14 +74,14 @@
 }
 
 .why-title {
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 1.6rem;
+    font-weight: 800;
     color: #ffffff;
     margin: 0 0 0.6rem;
 }
 
 .why-desc {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #b0b3ba;
     line-height: 1.7;
     margin: 0;
