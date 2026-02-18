@@ -1,16 +1,19 @@
 #navbar {
-  display: flex;
-  flex-direction: row;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(160deg, #1a1e2a 0%, #170a14 100%);
 }
 
 #navbar a {
-  color: #ffffff;
-  margin-right: 20px;
-  text-decoration: none;
-  transition: color 0.2s ease;
+    color: #ffffff;
+    margin-right: 20px;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 #navbar a:hover {
-  cursor: pointer;
-  color: #91a4d2;
+    cursor: pointer;
+    color: #91a4d2;
 }

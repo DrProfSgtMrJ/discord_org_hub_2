@@ -2,7 +2,8 @@ body {
     background-color: #0f1116;
     color: #ffffff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 20px;
+    margin: 0;
+    padding: 0;
 }
 
 #links {
