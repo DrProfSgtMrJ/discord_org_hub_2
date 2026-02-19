@@ -50,6 +50,7 @@ pub enum InputText {
     SeasonNumPlayers,
     SeasonStartDate,
     SeasonEndDate,
+    SeasonType,
 }
 
 impl InputText {
@@ -59,6 +60,7 @@ impl InputText {
             InputText::SeasonNumPlayers => "Number of Players".to_string(),
             InputText::SeasonStartDate => "Start Date".to_string(),
             InputText::SeasonEndDate => "End Date".to_string(),
+            InputText::SeasonType => "Season Type".to_string(),
         }
     }
 
@@ -68,6 +70,7 @@ impl InputText {
             InputText::SeasonNumPlayers => "season_num_players".to_string(),
             InputText::SeasonStartDate => "season_start_date".to_string(),
             InputText::SeasonEndDate => "season_end_date".to_string(),
+            InputText::SeasonType => "season_type".to_string(),
         }
     }
 
@@ -81,6 +84,7 @@ impl InputText {
             InputText::SeasonEndDate => {
                 "Enter end date (YYYY-MM-DD) - Leave empty for no end date".to_string()
             }
+            InputText::SeasonType => "Enter season type (valid types: Survivor, Traitors, BigBrother, TheChallenge, Other)".to_string(),
         }
     }
 
@@ -90,6 +94,7 @@ impl InputText {
             InputText::SeasonNumPlayers => 3,
             InputText::SeasonStartDate => 10,
             InputText::SeasonEndDate => 10,
+            InputText::SeasonType => 12,
         }
     }
 
@@ -99,6 +104,7 @@ impl InputText {
             InputText::SeasonNumPlayers => true,
             InputText::SeasonStartDate => true,
             InputText::SeasonEndDate => false,
+            InputText::SeasonType => false,
         }
     }
 }
@@ -112,6 +118,7 @@ impl FromStr for InputText {
             "season_num_players" => Ok(InputText::SeasonNumPlayers),
             "season_start_date" => Ok(InputText::SeasonStartDate),
             "season_end_date" => Ok(InputText::SeasonEndDate),
+            "season_type" => Ok(InputText::SeasonType),
             _ => Err("Invalid input text ID".to_string()),
         }
     }

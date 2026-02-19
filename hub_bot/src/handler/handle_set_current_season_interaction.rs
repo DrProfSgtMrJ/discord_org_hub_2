@@ -52,10 +52,13 @@ pub async fn handle_set_current_season_interaction_no(
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content("Success!"),
+                CreateInteractionResponseMessage::new()
+                    .content("Success!")
+                    .components(vec![]),
             ),
         )
         .await?;
+
     Ok(())
 }
 
@@ -67,7 +70,9 @@ async fn send_season_not_found_message(
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content("Season not found"),
+                CreateInteractionResponseMessage::new()
+                    .content("Season not found")
+                    .components(vec![]),
             ),
         )
         .await?;

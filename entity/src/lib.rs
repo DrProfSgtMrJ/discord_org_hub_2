@@ -3,8 +3,9 @@
 pub mod prelude;
 
 pub mod discord_user;
+pub mod entities;
 pub mod member;
 pub mod org;
+pub mod sea_orm_active_enums;
 pub mod season;
 pub mod season_member;
-pub mod entities;

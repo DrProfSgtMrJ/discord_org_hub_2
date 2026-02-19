@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use chrono::NaiveDate;
+use entity::sea_orm_active_enums::SeasonType;
 use poise::serenity_prelude::{
     ActionRow, ActionRowComponent, Context, CreateActionRow, CreateButton,
     CreateInteractionResponse, CreateInteractionResponseMessage, ModalInteraction,
@@ -17,7 +18,8 @@ struct SeasonFormData {
     title: String,
     num_players: String,
     start_date: String,
-    end_data: Option<String>,
+    end_date: Option<String>,
+    season_type: Option<String>,
 }
 
 #[derive(Debug)]
@@ -26,6 +28,7 @@ struct SeasonParsedData {
     num_players: i32,
     start_date: NaiveDate,
     end_date: Option<NaiveDate>,
+    season_type: Option<SeasonType>,
 }
 
 pub async fn handle_create_season_interaction(
@@ -51,6 +54,7 @@ pub async fn handle_create_season_interaction(
                             parsed_season_data.num_players,
                             parsed_season_data.start_date,
                             parsed_season_data.end_date,
+                            parsed_season_data.season_type,
                         )
                         .await
                     {
@@ -96,6 +100,7 @@ fn extract_season_form_data(components: &Vec<ActionRow>) -> Result<SeasonFormDat
     let mut num_players: Option<String> = None;
     let mut start_date: Option<String> = None;
     let mut end_date: Option<String> = None;
+    let mut season_type: Option<String> = None;
 
     for row in components {
         for component in &row.components {
@@ -115,6 +120,13 @@ fn extract_season_form_data(components: &Vec<ActionRow>) -> Result<SeasonFormDat
                         start_date = input_text.value.clone()
                     }
                     Ok(InputTextComponent::SeasonTitle) => title = input_text.value.clone(),
+                    Ok(InputTextComponent::SeasonType) => {
+                        if let Some(ref value) = input_text.value
+                            && !value.trim().is_empty()
+                        {
+                            season_type = Some(value.to_lowercase().split_whitespace().collect())
+                        }
+                    }
                     Err(e) => return Err(Error::from(e)),
                 }
             }
@@ -125,14 +137,15 @@ fn extract_season_form_data(components: &Vec<ActionRow>) -> Result<SeasonFormDat
         title: title.ok_or(Error::from("Title is required"))?,
         num_players: num_players.ok_or(Error::from("Num Players is required"))?,
         start_date: start_date.ok_or(Error::from("Start Date is required"))?,
-        end_data: end_date,
+        end_date,
+        season_type,
     })
 }
 
 fn parse_season_form_data(season_form_data: &SeasonFormData) -> Result<SeasonParsedData, Error> {
     println!("Parsing season form data: {:?}", season_form_data);
     if let Ok(start_date) = NaiveDate::parse_from_str(&season_form_data.start_date, "%Y-%m-%d") {
-        let end_date: Option<NaiveDate> = match &season_form_data.end_data {
+        let end_date: Option<NaiveDate> = match &season_form_data.end_date {
             Some(end_date) => match NaiveDate::parse_from_str(end_date, "%Y-%m-%d") {
                 Ok(date) => {
                     if start_date > date {
@@ -148,12 +161,21 @@ fn parse_season_form_data(season_form_data: &SeasonFormData) -> Result<SeasonPar
         let num_players: i32 = season_form_data
             .num_players
             .parse()
-            .map_err(|_| Error::from("Invalid number of players"))?;
+            .map_err(|_| "Invalid number of players".to_string())?;
+        let season_type = match &season_form_data.season_type {
+            Some(season_type) => match SeasonType::from_str(season_type) {
+                Ok(s) => Some(s),
+                Err(e) => return Err(Error::from(format!("Invalid Season Type: {}", e))),
+            },
+            None => None,
+        };
+
         Ok(SeasonParsedData {
             title: season_form_data.title.clone(),
             num_players,
             start_date,
             end_date,
+            season_type,
         })
     } else {
         println!("Invalid start date");
