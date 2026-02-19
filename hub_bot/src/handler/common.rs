@@ -12,7 +12,9 @@ pub async fn send_success_response(
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content("Success!"),
+                CreateInteractionResponseMessage::new()
+                    .content("Success!")
+                    .components(vec![]),
             ),
         )
         .await?;
@@ -29,7 +31,9 @@ pub async fn send_modal_error_response(
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content(error_message),
+                CreateInteractionResponseMessage::new()
+                    .content(error_message)
+                    .components(vec![]),
             ),
         )
         .await
@@ -48,7 +52,9 @@ pub async fn send_component_error_response(
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content(error_message),
+                CreateInteractionResponseMessage::new()
+                    .content(error_message)
+                    .components(vec![]),
             ),
         )
         .await

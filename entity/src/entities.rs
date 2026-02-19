@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use crate::sea_orm_active_enums::SeasonType;
+
 use super::discord_user::ActiveModel as DiscordUserActiveModel;
 use super::member::ActiveModel as MemberActiveModel;
 use super::org::ActiveModel as OrgActiveModel;
@@ -64,6 +68,7 @@ impl SeasonActiveModel {
         num_players: i32,
         start_date: NaiveDate,
         end_date: Option<NaiveDate>,
+        season_type: Option<SeasonType>,
     ) -> Self {
         Self {
             id: Set(Uuid::new_v4()),
@@ -72,6 +77,7 @@ impl SeasonActiveModel {
             num_players: Set(num_players),
             start_date: Set(start_date),
             end_date: Set(end_date),
+            season_type: Set(season_type.unwrap_or(SeasonType::Survivor)),
         }
     }
 }
@@ -83,6 +89,26 @@ impl SeasonMemberActiveModel {
             season_id: Set(season_id),
             member_id: Set(member_id),
             placement: Set(placement),
+        }
+    }
+}
+
+impl FromStr for SeasonType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Survivor" => Ok(SeasonType::Survivor),
+            "Traitors" => Ok(SeasonType::Traitors),
+            "BigBrother" => Ok(SeasonType::BigBrother),
+            "TheChallenge" => Ok(SeasonType::TheChallenge),
+            "Other" => Ok(SeasonType::Other),
+            "survivor" => Ok(SeasonType::Survivor),
+            "traitors" => Ok(SeasonType::Traitors),
+            "bigbrother" => Ok(SeasonType::BigBrother),
+            "thechallenge" => Ok(SeasonType::TheChallenge),
+            "other" => Ok(SeasonType::Other),
+            _ => Err("Invalid season type".to_string()),
         }
     }
 }

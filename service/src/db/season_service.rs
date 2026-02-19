@@ -1,6 +1,9 @@
 use chrono::NaiveDate;
-use entity::season::{
-    self, ActiveModel as SeasonActiveModel, Entity as SeasonEntity, Model as SeasonModel,
+use entity::{
+    sea_orm_active_enums::SeasonType,
+    season::{
+        self, ActiveModel as SeasonActiveModel, Entity as SeasonEntity, Model as SeasonModel,
+    },
 };
 
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
@@ -17,6 +20,7 @@ pub trait SeasonService {
         num_players: i32,
         start_date: NaiveDate,
         end_date: Option<NaiveDate>,
+        season_type: Option<SeasonType>,
     ) -> Result<SeasonModel, DbErr>;
 
     async fn get_season_by_id(&self, season_uuid: &str) -> Result<Option<SeasonModel>, DbErr>;
@@ -40,6 +44,7 @@ impl SeasonService for DbService {
         num_players: i32,
         start_date: NaiveDate,
         end_date: Option<NaiveDate>,
+        season_type: Option<SeasonType>,
     ) -> Result<SeasonModel, DbErr> {
         if num_players < 0 {
             return Err(DbErr::Custom(
@@ -47,7 +52,14 @@ impl SeasonService for DbService {
             ));
         }
 
-        let season = SeasonActiveModel::new(title, org_id, num_players, start_date, end_date);
+        let season = SeasonActiveModel::new(
+            title,
+            org_id,
+            num_players,
+            start_date,
+            end_date,
+            season_type,
+        );
 
         match self.get_connection() {
             Ok(conn) => season.insert(conn).await,

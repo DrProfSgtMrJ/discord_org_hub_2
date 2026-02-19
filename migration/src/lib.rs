@@ -6,6 +6,7 @@ mod m20260206_212941_create_member_table;
 mod m20260207_023556_create_season_table;
 mod m20260207_033742_remove_playing_from_member;
 mod m20260207_081033_change_num_players_to_unsigned;
+mod m20260219_212225_add_season_type;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260207_023556_create_season_table::Migration),
             Box::new(m20260207_033742_remove_playing_from_member::Migration),
             Box::new(m20260207_081033_change_num_players_to_unsigned::Migration),
+            Box::new(m20260219_212225_add_season_type::Migration),
         ]
     }
 }
