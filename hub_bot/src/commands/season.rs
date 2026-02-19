@@ -21,6 +21,7 @@ async fn setup_create_season_modal(ctx: Context<'_>) -> Result<(), Error> {
     let num_players_action_row: CreateActionRow = InputText::SeasonNumPlayers.into();
     let start_date_action_row: CreateActionRow = InputText::SeasonStartDate.into();
     let end_date_action_row: CreateActionRow = InputText::SeasonEndDate.into();
+    let season_type_action_row: CreateActionRow = InputText::SeasonType.into();
 
     if let poise::Context::Application(app_ctx) = ctx {
         app_ctx
@@ -32,6 +33,7 @@ async fn setup_create_season_modal(ctx: Context<'_>) -> Result<(), Error> {
                     num_players_action_row,
                     start_date_action_row,
                     end_date_action_row,
+                    season_type_action_row,
                 ])),
             )
             .await?;
