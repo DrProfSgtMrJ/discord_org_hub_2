@@ -72,7 +72,6 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    border-left: 1px solid #5865f2;
 }
 
 .why-card-content {
@@ -128,6 +127,40 @@
     }
 
     .why-card-preview {
+        max-width: 100%;
+    }
+}
+
+.why-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+    padding-left: 1.1rem;
+    list-style: disc;
+}
+
+.why-tem-list-li {
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: #a8b4ff;
+    background-color: #0d0f13;
+    border: 1px solid #3a3d45;
+    border-radius: 6px;
+    padding: 0.25rem 0.55rem;
+    white-space: pre;
+    display: list-item;
+}
+
+/* Size the carousel within the why-section layout */
+.why-carousel-wrapper {
+    flex: 1;
+    max-width: 520px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .why-carousel-wrapper {
         max-width: 100%;
     }
 }

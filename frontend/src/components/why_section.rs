@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
 
+use crate::components::ImageCarousel;
+
 const WHY_CSS: Asset = asset!("/assets/styling/why_section.css");
 
 #[derive(Debug, Clone, PartialEq)]
@@ -8,18 +10,20 @@ pub struct WhyCard {
     icon: &'static str,
     title: &'static str,
     description: &'static str,
-    image: Asset,
+    images: &'static [Asset],
     back_title: &'static str,
     back_description: &'static str,
+    back_bullet_points: &'static [&'static str],
 }
 
 const WHY_CARDS: &[WhyCard] = &[WhyCard {
     icon: "📖",
     title: "Never Lose History",
     description: "Preserve your season history. Let others view your vast seasons quickly!",
-    image: asset!("/assets/bot_seasons_example.png"),
+    images: &[asset!("/assets/bot_seasons_example.png"), asset!("/assets/bot_season_info_example.png")],
     back_title: "Commands",
     back_description: "View commands",
+    back_bullet_points: &["/seasons", "/season_info <season_id>"],
 }];
 
 #[component]
@@ -71,14 +75,23 @@ pub fn AnimatedWhyCard(card: &'static WhyCard) -> Element {
                         div { class: "why-card-content",
                             h1 { class: "why-title", "{card.back_title}" }
                             p { class: "why-desc", "{card.back_description}"}
+                            if !card.back_bullet_points.is_empty() {
+                                ul { class: "why-tem-list-ul",
+                                    for point in card.back_bullet_points {
+                                        code { class: "why-tem-list-li", "{point}" }
+                                    }
+                                }
+                            }
                             span { class: "why-card-hint", "<- Click to collapse" }
                         }
                     }
                 }
             }
 
-            // Screenshots (right)
-            img { class: "why-card-preview", src: card.image }
+            // Carousel (right)
+            div { class: "why-carousel-wrapper",
+                ImageCarousel {  images: card.images }
+            }
         }
     }
 }
