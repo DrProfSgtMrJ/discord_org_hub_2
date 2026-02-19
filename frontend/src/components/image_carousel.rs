@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_motion::prelude::*;
+use dioxus_free_icons::Icon;
+use dioxus_free_icons::icons::ld_icons::{LdChevronLeft, LdChevronRight};
 
 const CAROUSEL_CSS: Asset = asset!("/assets/styling/image_carousel.css");
 
@@ -51,17 +53,15 @@ pub fn ImageCarousel(images: &'static [Asset]) -> Element {
                 }
             }
             if show_controls {
-                button { class: "carousel-btn carousel-prev", onclick: go_prev, "<" }
-                button { class: "carousel-btn carousel-next", onclick: go_next, ">" }
+                button { class: "carousel-btn carousel-prev", onclick: go_prev,
+                    Icon { icon: LdChevronLeft }
+                }
+                button { class: "carousel-btn carousel-next", onclick: go_next,
+                    Icon { icon: LdChevronRight }
+                }
                 div { class: "carousel-dots",
                     for i in 0..images.len() {
-                        span {
-                            class: if i == current_index() {
-                                "carousel-dot carousel-dot-active"
-                            } else {
-                                "carousel-dot"
-                            }
-                        },
+                        span { class: if i == current_index() { "carousel-dot carousel-dot-active" } else { "carousel-dot" } }
                     }
                 }
             }
