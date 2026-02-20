@@ -149,6 +149,8 @@ pub enum Button {
         owner_id: String,
     },
     RegisterOrgNo,
+    SeasonsPrev,
+    SeasonsNext,
 }
 
 impl Button {
@@ -162,6 +164,8 @@ impl Button {
                 owner_id: _,
             } => "Yes".to_string(),
             Button::RegisterOrgNo => "No".to_string(),
+            Button::SeasonsPrev => "◀".to_string(),
+            Button::SeasonsNext => "▶".to_string(),
         }
     }
 
@@ -175,6 +179,8 @@ impl Button {
                 owner_id: _,
             } => ButtonStyle::Primary,
             Button::RegisterOrgNo => ButtonStyle::Secondary,
+            Button::SeasonsPrev => ButtonStyle::Secondary,
+            Button::SeasonsNext => ButtonStyle::Secondary,
         }
     }
 
@@ -194,6 +200,8 @@ impl Button {
                 format!("register_org_yes:{}:{}:{}", org_name, guild_id, owner_id)
             }
             Button::RegisterOrgNo => "register_org_no".to_string(),
+            Button::SeasonsPrev => "seasons_prev".to_string(),
+            Button::SeasonsNext => "seasons_next".to_string(),
         }
         .to_string()
     }
@@ -227,6 +235,8 @@ impl FromStr for Button {
                 guild_id: parts.get(2).ok_or("Invalid")?.to_string(),
                 owner_id: parts.get(3).ok_or("Invalid")?.to_string(),
             }),
+            "seasons_prev" => Ok(Button::SeasonsPrev),
+            "seasons_next" => Ok(Button::SeasonsNext),
             _ => Err("Invalid action".to_string()),
         }
     }

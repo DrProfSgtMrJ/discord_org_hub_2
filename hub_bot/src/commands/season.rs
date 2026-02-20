@@ -1,14 +1,23 @@
+use poise::futures_util::StreamExt;
+use poise::serenity_prelude::CreateInteractionResponseMessage;
+use std::str::FromStr;
+use std::time::Duration;
+
 use crate::commands::common::get_discord_guild_id_from_context;
 use poise::CreateReply;
+use poise::serenity_prelude::ComponentInteractionCollector;
 use poise::serenity_prelude::CreateActionRow;
+use poise::serenity_prelude::CreateButton;
 use poise::serenity_prelude::CreateEmbed;
 use poise::serenity_prelude::CreateInteractionResponse;
 use poise::serenity_prelude::CreateModal;
 use service::MemberService;
 use service::{OrderBy, OrgService, SeasonService};
 
-use super::components::{InputText, Modal};
+use super::components::{Button, InputText, Modal};
 use crate::{Context, Error};
+
+const SEASONS_PER_PAGE: usize = 10;
 
 #[poise::command(track_edits, owners_only, slash_command)]
 pub async fn create_season(ctx: Context<'_>) -> Result<(), Error> {
@@ -58,26 +67,88 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
             .get_seasons_by_org_id(org_id, Some(order_by))
             .await?;
 
-        for (page, chunk) in seasons.chunks(10).enumerate() {
-            let mut season_embeded = CreateEmbed::default().title(if page == 0 {
-                "Seasons".to_string()
-            } else {
-                format!("Seasons - Page {}", page + 1)
-            });
-            for (i, season) in chunk.iter().enumerate() {
-                let global_index = page * 10 + i + 1;
-                let date_range = match season.end_date {
-                    Some(end) => format!("{} - {}", season.start_date, end),
-                    None => format!("{} - Present", season.start_date),
-                };
-                season_embeded = season_embeded.field(
-                    format!("{}. {}", global_index, season.title),
-                    format!("📅 {}", date_range),
-                    false,
-                );
+        let total_pages = seasons.len().div_ceil(SEASONS_PER_PAGE);
+        let mut page = 0usize;
+
+        let build_embed = |page: usize| {
+            let start = page * SEASONS_PER_PAGE;
+            let end = (start + SEASONS_PER_PAGE).min(seasons.len());
+
+            seasons[start..end].iter().enumerate().fold(
+                CreateEmbed::default().title(format!("Seasons ({}/{})", page + 1, total_pages)),
+                |embed, (i, season)| {
+                    let date_range = match season.end_date {
+                        Some(end) => format!("{} - {}", season.start_date, end),
+                        None => format!("{} - Present", season.start_date),
+                    };
+                    embed.field(
+                        format!("{}. {}", start + i + 1, season.title),
+                        format!("📅 {}", date_range),
+                        false,
+                    )
+                },
+            )
+        };
+
+        let build_buttons = |page: usize| {
+            let prev_disabled = page == 0;
+            let next_disabled = page == total_pages - 1;
+
+            let mut prev_button: CreateButton = Button::SeasonsPrev.into();
+            let mut next_button: CreateButton = Button::SeasonsNext.into();
+
+            prev_button = prev_button.disabled(prev_disabled);
+            next_button = next_button.disabled(next_disabled);
+
+            CreateActionRow::Buttons(vec![prev_button, next_button])
+        };
+
+        let components = if total_pages > 1 {
+            vec![build_buttons(page)]
+        } else {
+            vec![]
+        };
+
+        let reply = ctx
+            .send(
+                CreateReply::default()
+                    .embed(build_embed(page))
+                    .components(components),
+            )
+            .await?;
+
+        if total_pages <= 1 {
+            return Ok(());
+        }
+
+        let message = reply.message().await?;
+
+        let mut stream = ComponentInteractionCollector::new(ctx.serenity_context())
+            .message_id(message.id)
+            .author_id(ctx.author().id)
+            .timeout(Duration::from_secs(120))
+            .stream();
+
+        while let Some(press) = stream.next().await {
+            match Button::from_str(&press.data.custom_id) {
+                Ok(Button::SeasonsNext) => {
+                    page = (page + 1).min(total_pages - 1);
+                }
+                Ok(Button::SeasonsPrev) => {
+                    page = page.saturating_sub(1);
+                }
+                _ => continue,
             }
 
-            ctx.send(CreateReply::default().embed(season_embeded))
+            press
+                .create_response(
+                    &ctx.serenity_context().http,
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .embed(build_embed(page))
+                            .components(vec![build_buttons(page)]),
+                    ),
+                )
                 .await?;
         }
     }
