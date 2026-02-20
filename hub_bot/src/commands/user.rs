@@ -40,7 +40,7 @@ async fn register_user_internal(
     let discord_id = user.id.get().to_string();
     let avatar_url = user.avatar_url();
 
-    let db_service = ctx.data();
+    let db_service = &ctx.data().db_service;
 
     match db_service
         .create_user(discord_id.as_str(), display_name, timezone, avatar_url)

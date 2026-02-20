@@ -1223,6 +1223,8 @@ dependencies = [
  "entity",
  "poise",
  "sea-orm",
+ "serde",
+ "serde_json",
  "service",
  "tokio",
  "uuid",

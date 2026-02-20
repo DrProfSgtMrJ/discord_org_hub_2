@@ -59,7 +59,7 @@ pub async fn register_members(
 
 pub async fn handle_register_member(ctx: Context<'_>, member: Member) -> Result<(), Error> {
     if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx) {
-        let db_service = ctx.data();
+        let db_service = &ctx.data().db_service;
         let discord_user_id = member.user.id.get().to_string();
         if let Some(org) = db_service.get_org_by_discord_id(&discord_guild_id).await?
             && let Some(user) = db_service.get_user_by_discord_id(&discord_user_id).await?
@@ -110,7 +110,7 @@ pub async fn add_to_season(
     #[description = "Placement in the season"] placement: Option<i32>,
 ) -> Result<(), Error> {
     if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx) {
-        let db_service = ctx.data();
+        let db_service = &ctx.data().db_service;
         let discord_user_id = member.user.id.get().to_string();
         if let Some(member) = db_service
             .get_member_by_ids(&discord_user_id, &discord_guild_id)

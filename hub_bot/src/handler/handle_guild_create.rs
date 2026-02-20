@@ -1,5 +1,5 @@
 use crate::Error;
-use crate::commands::Button;
+use crate::components::Button;
 use poise::serenity_prelude::{
     Context, CreateActionRow, CreateButton, CreateEmbed, CreateMessage, Guild, Mentionable,
     Timestamp, User,

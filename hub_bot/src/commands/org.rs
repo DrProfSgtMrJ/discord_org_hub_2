@@ -14,7 +14,7 @@ pub async fn register_org(ctx: Context<'_>, member: Member, org_name: String) ->
     if let Some(org_id) = ctx.guild_id() {
         let org_discord_id = org_id.get().to_string();
         let owner_id = member.user.id.get().to_string();
-        let db_service = ctx.data();
+        let db_service = &ctx.data().db_service;
         if let Some(owner) = db_service.get_user_by_discord_id(owner_id.as_str()).await? {
             match db_service
                 .create_org(org_name.as_str(), org_discord_id.as_str(), owner.id, None)

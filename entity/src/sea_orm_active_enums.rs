@@ -2,7 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Hash)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "season_type")]
 pub enum SeasonType {
     #[sea_orm(string_value = "season_type")]

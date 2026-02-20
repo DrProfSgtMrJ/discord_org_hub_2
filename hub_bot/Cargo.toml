@@ -9,6 +9,8 @@ dotenv.workspace = true
 poise = "0.6.1"
 service = { path = "../service" }
 entity = { path = "../entity" }
+serde.workspace = true
+serde_json.workspace = true
 sea-orm.workspace = true
 chrono.workspace = true
 uuid.workspace = true

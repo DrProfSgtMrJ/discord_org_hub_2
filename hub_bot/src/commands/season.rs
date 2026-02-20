@@ -1,61 +1,44 @@
+use entity::sea_orm_active_enums::SeasonType;
 use poise::futures_util::StreamExt;
 use poise::serenity_prelude::CreateInteractionResponseMessage;
+use sea_orm::ActiveEnum;
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 
-use crate::commands::common::get_discord_guild_id_from_context;
+use crate::commands::common::{get_discord_guild_id_from_context};
 use poise::CreateReply;
-use poise::serenity_prelude::ComponentInteractionCollector;
-use poise::serenity_prelude::CreateActionRow;
-use poise::serenity_prelude::CreateButton;
-use poise::serenity_prelude::CreateEmbed;
-use poise::serenity_prelude::CreateInteractionResponse;
-use poise::serenity_prelude::CreateModal;
+use poise::serenity_prelude::{
+    ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed,
+    CreateInteractionResponse 
+};
 use service::MemberService;
 use service::{OrderBy, OrgService, SeasonService};
 
-use super::components::{Button, InputText, Modal};
+use crate::components::{Button};
 use crate::{Context, Error};
+use super::season_helpers::{create_season_with_type, send_add_members_to_season, handle_modal_submission, handle_season_type_select_menu, setup_create_season_modal, send_season_type_select_menu, handle_add_memebers_to_season};
 
 const SEASONS_PER_PAGE: usize = 10;
 
 #[poise::command(track_edits, owners_only, slash_command)]
 pub async fn create_season(ctx: Context<'_>) -> Result<(), Error> {
-    setup_create_season_modal(ctx).await
-}
-
-async fn setup_create_season_modal(ctx: Context<'_>) -> Result<(), Error> {
-    let modal: CreateModal = Modal::CreateSeason.into();
-    let title_action_row: CreateActionRow = InputText::SeasonTitle.into();
-    let num_players_action_row: CreateActionRow = InputText::SeasonNumPlayers.into();
-    let start_date_action_row: CreateActionRow = InputText::SeasonStartDate.into();
-    let end_date_action_row: CreateActionRow = InputText::SeasonEndDate.into();
-    let season_type_action_row: CreateActionRow = InputText::SeasonType.into();
-
-    if let poise::Context::Application(app_ctx) = ctx {
-        app_ctx
-            .interaction
-            .create_response(
-                &ctx.serenity_context().http,
-                CreateInteractionResponse::Modal(modal.components(vec![
-                    title_action_row,
-                    num_players_action_row,
-                    start_date_action_row,
-                    end_date_action_row,
-                    season_type_action_row,
-                ])),
-            )
-            .await?;
-    } else {
-        ctx.reply("This command only works as a slash command. Please use /create_server")
-            .await?;
-    }
+    // Open Modal
+    setup_create_season_modal(&ctx).await?;
+    let (parsed_season_data, modal_response) = handle_modal_submission(&ctx).await?;
+    send_season_type_select_menu(&ctx, &modal_response).await?;
+    let (season_type, component_interaction) = handle_season_type_select_menu(&ctx).await?;
+    let season = create_season_with_type(&ctx, &component_interaction, parsed_season_data, season_type).await?;
+    send_add_members_to_season(&season.id.to_string(), &season.title, &ctx, &component_interaction).await?;
+    let _member_component_interaction = handle_add_memebers_to_season(&ctx, &season.id.to_string()).await?;
+    // handle_add_memebers_to_season already responds to the interaction
     Ok(())
 }
 
+
 #[poise::command(track_edits, slash_command)]
 pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
-    let db_service = ctx.data();
+    let db_service = &ctx.data().db_service;
     if let Some(guild_id) = get_discord_guild_id_from_context(&ctx)
         && let Some(org) = db_service.get_org_by_discord_id(&guild_id).await?
     {
@@ -67,59 +50,37 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
             .get_seasons_by_org_id(org_id, Some(order_by))
             .await?;
 
-        let total_pages = seasons.len().div_ceil(SEASONS_PER_PAGE);
+        let mut grouped: HashMap<SeasonType, Vec<entity::season::Model>> = HashMap::new();
+        for season in &seasons {
+            grouped
+                .entry(season.season_type.clone())
+                .or_default()
+                .push(season.clone())
+        }
+
         let mut page = 0usize;
+        let mut active_filter: Option<SeasonType> = None;
 
-        let build_embed = |page: usize| {
-            let start = page * SEASONS_PER_PAGE;
-            let end = (start + SEASONS_PER_PAGE).min(seasons.len());
-
-            seasons[start..end].iter().enumerate().fold(
-                CreateEmbed::default().title(format!("Seasons ({}/{})", page + 1, total_pages)),
-                |embed, (i, season)| {
-                    let date_range = match season.end_date {
-                        Some(end) => format!("{} - {}", season.start_date, end),
-                        None => format!("{} - Present", season.start_date),
-                    };
-                    embed.field(
-                        format!("{}. {}", start + i + 1, season.title),
-                        format!("📅 {}", date_range),
-                        false,
-                    )
-                },
-            )
+        let get_view = |filter: &Option<SeasonType>| -> &[entity::season::Model] {
+            match filter {
+                Some(ft) => grouped.get(ft).map(|v| v.as_slice()).unwrap_or(&[]),
+                None => seasons.as_slice(),
+            }
         };
 
-        let build_buttons = |page: usize| {
-            let prev_disabled = page == 0;
-            let next_disabled = page == total_pages - 1;
-
-            let mut prev_button: CreateButton = Button::SeasonsPrev.into();
-            let mut next_button: CreateButton = Button::SeasonsNext.into();
-
-            prev_button = prev_button.disabled(prev_disabled);
-            next_button = next_button.disabled(next_disabled);
-
-            CreateActionRow::Buttons(vec![prev_button, next_button])
-        };
-
-        let components = if total_pages > 1 {
-            vec![build_buttons(page)]
-        } else {
-            vec![]
-        };
+        let view = get_view(&active_filter);
+        let total_pages = view.len().div_ceil(SEASONS_PER_PAGE).max(1);
 
         let reply = ctx
             .send(
                 CreateReply::default()
-                    .embed(build_embed(page))
-                    .components(components),
+                    .embed(build_embed(view, &active_filter, page, total_pages))
+                    .components(vec![
+                        build_nav_row(page, total_pages),
+                        build_filter_row(&active_filter),
+                    ]),
             )
             .await?;
-
-        if total_pages <= 1 {
-            return Ok(());
-        }
 
         let message = reply.message().await?;
 
@@ -137,16 +98,44 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
                 Ok(Button::SeasonsPrev) => {
                     page = page.saturating_sub(1);
                 }
+                Ok(Button::SeasonTheChallenge { .. }) => {
+                    active_filter = toggle_filter(active_filter, SeasonType::TheChallenge);
+                    page = 0;
+                }
+                Ok(Button::SeasonSurvivor { .. }) => {
+                    active_filter = toggle_filter(active_filter, SeasonType::Survivor);
+                    page = 0;
+                }
+                Ok(Button::SeasonBigBrother { .. }) => {
+                    active_filter = toggle_filter(active_filter, SeasonType::BigBrother);
+                    page = 0;
+                }
+                Ok(Button::SeasonOther { .. }) => {
+                    active_filter = toggle_filter(active_filter, SeasonType::Other);
+                    page = 0;
+                }
+                Ok(Button::SeasonTraitors { .. }) => {
+                    active_filter = toggle_filter(active_filter, SeasonType::Traitors);
+                    page = 0;
+                }
                 _ => continue,
             }
+
+            // recomputing to avoid stale data
+            let view = get_view(&active_filter);
+            let total_pages = view.len().div_ceil(SEASONS_PER_PAGE).max(1);
+            page = page.min(total_pages.saturating_sub(1));
 
             press
                 .create_response(
                     &ctx.serenity_context().http,
                     CreateInteractionResponse::UpdateMessage(
                         CreateInteractionResponseMessage::new()
-                            .embed(build_embed(page))
-                            .components(vec![build_buttons(page)]),
+                            .embed(build_embed(view, &active_filter, page, total_pages))
+                            .components(vec![
+                                build_nav_row(page, total_pages),
+                                build_filter_row(&active_filter),
+                            ]),
                     ),
                 )
                 .await?;
@@ -163,7 +152,7 @@ pub async fn season_info(
     ctx: Context<'_>,
     #[description = "Season ID as found in /seasons"] season_id: Option<usize>,
 ) -> Result<(), Error> {
-    let db_service = ctx.data();
+    let db_service = &ctx.data().db_service;
     if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx)
         && let Some(org) = db_service.get_org_by_discord_id(&discord_guild_id).await?
     {
@@ -241,4 +230,82 @@ fn format_season_description(season_id: usize, season: &entity::season::Model) -
         "**{}** • {} \n📅 {}\n\n",
         season_id, season.title, date_range
     )
+}
+
+fn build_embed(
+    seasons: &[entity::season::Model],
+    active_filter: &Option<SeasonType>,
+    page: usize,
+    total_pages: usize,
+) -> CreateEmbed {
+    let start = page * SEASONS_PER_PAGE;
+    let end = (start + SEASONS_PER_PAGE).min(seasons.len());
+    let title = match active_filter {
+        Some(ft) => format!(
+            "Seasons: ({}) ({})/({})",
+            ft.to_value(),
+            page + 1,
+            total_pages
+        ),
+        None => "Seasons (All)".to_string(),
+    };
+    seasons[start..end].iter().enumerate().fold(
+        CreateEmbed::default().title(title),
+        |embed, (i, season)| {
+            let date_range = match season.end_date {
+                Some(end) => format!("{} - {}", season.start_date, end),
+                None => format!("{} - Present", season.start_date),
+            };
+            embed.field(
+                format!("{}. {}", start + i + 1, season.title),
+                format!("📅 {}", date_range),
+                false,
+            )
+        },
+    )
+}
+
+fn build_nav_row(page: usize, total_pages: usize) -> CreateActionRow {
+    let prev_disabled = page == 0;
+    let next_disabled = page == total_pages - 1;
+
+    let mut prev_button: CreateButton = Button::SeasonsPrev.into();
+    let mut next_button: CreateButton = Button::SeasonsNext.into();
+
+    prev_button = prev_button.disabled(prev_disabled);
+    next_button = next_button.disabled(next_disabled);
+
+    CreateActionRow::Buttons(vec![prev_button, next_button])
+}
+
+fn build_filter_row(active_filter: &Option<SeasonType>) -> CreateActionRow {
+    CreateActionRow::Buttons(vec![
+        Button::SeasonSurvivor {
+            is_active: matches!(active_filter, Some(SeasonType::Survivor)),
+        }
+        .into(),
+        Button::SeasonBigBrother {
+            is_active: matches!(active_filter, Some(SeasonType::BigBrother)),
+        }
+        .into(),
+        Button::SeasonTraitors {
+            is_active: matches!(active_filter, Some(SeasonType::Traitors)),
+        }
+        .into(),
+        Button::SeasonTheChallenge {
+            is_active: matches!(active_filter, Some(SeasonType::TheChallenge)),
+        }
+        .into(),
+        Button::SeasonOther {
+            is_active: matches!(active_filter, Some(SeasonType::Other)),
+        }
+        .into(),
+    ])
+}
+
+fn toggle_filter(current: Option<SeasonType>, new: SeasonType) -> Option<SeasonType> {
+    match current {
+        Some(filter) if filter == new => None, // passing an active filter will clear it
+        _ => Some(new),
+    }
 }

@@ -1,4 +1,5 @@
 mod commands;
+mod components;
 mod handler;
 
 use dotenv::dotenv;
@@ -6,12 +7,16 @@ use poise::serenity_prelude::{self as serenity, FullEvent};
 
 use service::DbService;
 
-use crate::handler::{handle_guild_create, handle_interaction};
+use crate::handler::{handle_guild_create};
+
+pub struct BotData {
+    pub db_service: DbService,
+}
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, DbService, Error>;
+type Context<'a> = poise::Context<'a, BotData, Error>;
 
-async fn on_error(error: poise::FrameworkError<'_, DbService, Error>) {
+async fn on_error(error: poise::FrameworkError<'_, BotData, Error>) {
     match error {
         poise::FrameworkError::Command { error, ctx, .. } => {
             println!("Command error: {} {:?}", ctx.command().name, error);
@@ -63,7 +68,7 @@ async fn main() {
             })
         },
         skip_checks_for_owners: false,
-        event_handler: |ctx, event, framework, _data| {
+        event_handler: |ctx, event, _framework, data| {
             Box::pin(async move {
                 println!(
                     "Got an event in event handler: {:?}",
@@ -71,8 +76,7 @@ async fn main() {
                 );
                 match event {
                     FullEvent::InteractionCreate { interaction } => {
-                        let db_service = framework.user_data;
-                        handle_interaction(db_service, ctx, interaction).await;
+                        //handle_interaction(data, ctx, interaction).await;
                     }
                     FullEvent::GuildCreate { guild, is_new } => {
                         if let Some(new) = is_new
@@ -97,7 +101,9 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 let mut db_service = DbService::from_env()?;
                 db_service.connect().await?;
-                Ok(db_service)
+                Ok(BotData {
+                    db_service,
+                })
             })
         })
         .options(options)
