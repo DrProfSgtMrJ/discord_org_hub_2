@@ -1,9 +1,10 @@
 use std::str::FromStr;
 
-use crate::commands::{Button, Modal};
+use crate::commands::{Button, Modal, SelectMenu};
 use crate::handler::{
-    handle_create_season_interaction, handle_register_org_interaction_yes,
-    handle_set_current_season_interaction_no, handle_set_current_season_interaction_yes,
+    handle_add_members_to_season_interaction, handle_create_season_interaction,
+    handle_register_org_interaction_yes, handle_set_current_season_interaction_no,
+    handle_set_current_season_interaction_yes,
 };
 use poise::serenity_prelude::{Context, Interaction};
 use service::DbService;
@@ -11,11 +12,11 @@ use service::DbService;
 pub async fn handle_interaction(db_service: &DbService, ctx: &Context, interaction: &Interaction) {
     match interaction {
         Interaction::Modal(inter) => {
-            if let Ok(Modal::CreateSeason) = Modal::from_str(&inter.data.custom_id) {
-                let _ = handle_create_season_interaction(db_service, ctx, inter).await;
-                println!("Got Create Season");
+            if let Ok(Modal::CreateSeason) = Modal::from_str(&inter.data.custom_id)
+                && let Err(err) = handle_create_season_interaction(db_service, ctx, inter).await
+            {
+                println!("Error handling create season interaction: {}", err);
             }
-            //println!("Modal interaction received: {}", inter.)
         }
         Interaction::Component(inter) => {
             let custom_id = &inter.data.custom_id;
@@ -57,6 +58,18 @@ pub async fn handle_interaction(db_service: &DbService, ctx: &Context, interacti
                 }
                 Ok(Button::RegisterOrgNo) => {}
                 _ => {}
+            }
+            if let Ok(SelectMenu::MemberSelectMenu { season_uuid }) =
+                SelectMenu::from_str(custom_id)
+                && let Err(err) = handle_add_members_to_season_interaction(
+                    db_service,
+                    season_uuid.as_str(),
+                    ctx,
+                    inter,
+                )
+                .await
+            {
+                println!("Error with Member Select Menu: {}", err)
             }
         }
         _ => {}

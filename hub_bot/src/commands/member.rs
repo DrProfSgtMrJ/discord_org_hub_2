@@ -6,7 +6,7 @@ use service::OrgService;
 use service::SeasonService;
 use service::UserService;
 
-use crate::commands::common::get_discord_build_id_from_context;
+use crate::commands::common::get_discord_guild_id_from_context;
 use crate::{Context, Error};
 
 /// Command to register a member to an organization
@@ -58,7 +58,7 @@ pub async fn register_members(
 }
 
 pub async fn handle_register_member(ctx: Context<'_>, member: Member) -> Result<(), Error> {
-    if let Some(discord_guild_id) = get_discord_build_id_from_context(&ctx) {
+    if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx) {
         let db_service = ctx.data();
         let discord_user_id = member.user.id.get().to_string();
         if let Some(org) = db_service.get_org_by_discord_id(&discord_guild_id).await?
@@ -95,6 +95,7 @@ pub async fn handle_register_member(ctx: Context<'_>, member: Member) -> Result<
         }
     }
 
+    ctx.defer().await?;
     Ok(())
 }
 
@@ -108,7 +109,7 @@ pub async fn add_to_season(
     member: Member,
     #[description = "Placement in the season"] placement: Option<i32>,
 ) -> Result<(), Error> {
-    if let Some(discord_guild_id) = get_discord_build_id_from_context(&ctx) {
+    if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx) {
         let db_service = ctx.data();
         let discord_user_id = member.user.id.get().to_string();
         if let Some(member) = db_service

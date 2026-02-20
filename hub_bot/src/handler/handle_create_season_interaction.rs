@@ -3,14 +3,14 @@ use std::str::FromStr;
 use chrono::NaiveDate;
 use entity::sea_orm_active_enums::SeasonType;
 use poise::serenity_prelude::{
-    ActionRow, ActionRowComponent, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage, ModalInteraction,
+    ActionRow, ActionRowComponent, Context, CreateActionRow, CreateInteractionResponseFollowup,
+    ModalInteraction,
 };
 
-use crate::Error;
+use crate::{Error, commands::SelectMenu};
 
 use super::common::send_modal_error_response;
-use crate::commands::{Button, InputText as InputTextComponent};
+use crate::commands::InputText as InputTextComponent;
 use service::{DbService, OrgService, SeasonService};
 
 #[derive(Debug)]
@@ -36,6 +36,7 @@ pub async fn handle_create_season_interaction(
     ctx: &Context,
     interaction: &ModalInteraction,
 ) -> Result<(), Error> {
+    interaction.defer(&ctx.http).await?;
     let components = &interaction.data.components;
 
     if let Ok(season_form_data) = extract_season_form_data(components) {
@@ -59,8 +60,8 @@ pub async fn handle_create_season_interaction(
                         .await
                     {
                         Ok(season) => {
-                            // Reply with button - asking if you want to set it as the org's current season
-                            send_set_season_as_current_button(
+                            // Reply with user select menu
+                            send_add_members_to_season(
                                 &season.id.to_string(),
                                 &season.title,
                                 ctx,
@@ -183,32 +184,25 @@ fn parse_season_form_data(season_form_data: &SeasonFormData) -> Result<SeasonPar
     }
 }
 
-async fn send_set_season_as_current_button(
+async fn send_add_members_to_season(
     season_uuid: &str,
     season_title: &str,
     ctx: &Context,
     interaction: &ModalInteraction,
 ) -> Result<(), Error> {
-    let yes_button = Button::SetAsCurrentSeasonYes {
+    let select_user_menu: CreateActionRow = SelectMenu::MemberSelectMenu {
         season_uuid: season_uuid.to_string(),
-    };
-    let no_button = Button::SetAsCurrentSeasonNo {
-        season_uuid: season_uuid.to_string(),
-    };
-    let create_yes_button: CreateButton = yes_button.into();
-    let create_no_button: CreateButton = no_button.into();
-    let button_row = CreateActionRow::Buttons(vec![create_yes_button, create_no_button]);
+    }
+    .into();
     interaction
-        .create_response(
+        .create_followup(
             &ctx.http,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(format!(
-                        "Season: '{}' created successfully. Set it as current season?",
-                        season_title
-                    ))
-                    .components(vec![button_row]),
-            ),
+            CreateInteractionResponseFollowup::new()
+                .content(format!(
+                    "Season: '{}' create successfully. Add members to season?",
+                    season_title
+                ))
+                .components(vec![select_user_menu]),
         )
         .await?;
 

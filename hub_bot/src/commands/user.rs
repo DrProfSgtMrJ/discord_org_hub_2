@@ -53,7 +53,6 @@ async fn register_user_internal(
                 user.display_name
             ))
             .await?;
-            Ok(())
         }
         Err(err) => {
             // Handle the error
@@ -67,7 +66,9 @@ async fn register_user_internal(
                 ctx.reply(format!("An unexpected error occurred: {}", err))
                     .await?;
             }
-            Err(err.into())
         }
     }
+
+    ctx.defer().await?;
+    Ok(())
 }

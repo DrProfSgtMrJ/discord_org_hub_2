@@ -235,21 +235,23 @@ impl FromStr for Button {
 #[derive(Debug)]
 pub enum SelectMenu {
     SeasonSelectMenu(Vec<entity::season::Model>),
-    MemberSelectMenu(Vec<entity::member::Model>),
+    MemberSelectMenu { season_uuid: String },
 }
 
 impl SelectMenu {
     pub fn id(&self) -> String {
         match self {
             SelectMenu::SeasonSelectMenu(_) => "season_select_menu".to_string(),
-            SelectMenu::MemberSelectMenu(_) => "member_select_menu".to_string(),
+            SelectMenu::MemberSelectMenu { season_uuid } => {
+                format!("member_select_menu:{}", season_uuid)
+            }
         }
     }
 
     pub fn placeholder(&self) -> &str {
         match self {
             SelectMenu::SeasonSelectMenu(_) => "Select Season to register members to...",
-            SelectMenu::MemberSelectMenu(_) => "Select Members to register to...",
+            SelectMenu::MemberSelectMenu { .. } => "Select Members to register to...",
         }
     }
 
@@ -264,10 +266,7 @@ impl SelectMenu {
                     )
                 })
                 .collect(),
-            SelectMenu::MemberSelectMenu(members) => members
-                .iter()
-                .map(|member| CreateSelectMenuOption::new(format!("{}", member.id), member.id))
-                .collect(),
+            SelectMenu::MemberSelectMenu { .. } => vec![],
         }
     }
 
@@ -276,8 +275,8 @@ impl SelectMenu {
             SelectMenu::SeasonSelectMenu(_) => CreateSelectMenuKind::String {
                 options: self.options(),
             },
-            SelectMenu::MemberSelectMenu(_) => CreateSelectMenuKind::String {
-                options: self.options(),
+            SelectMenu::MemberSelectMenu { .. } => CreateSelectMenuKind::User {
+                default_users: None,
             },
         }
     }
@@ -285,14 +284,14 @@ impl SelectMenu {
     pub fn min_values(&self) -> u8 {
         match self {
             SelectMenu::SeasonSelectMenu(_) => 1,
-            SelectMenu::MemberSelectMenu(_) => 1,
+            SelectMenu::MemberSelectMenu { .. } => 0,
         }
     }
 
     pub fn max_values(&self) -> u8 {
         match self {
             SelectMenu::SeasonSelectMenu(_) => 1,
-            SelectMenu::MemberSelectMenu(_) => 1,
+            SelectMenu::MemberSelectMenu { .. } => 20,
         }
     }
 }
@@ -303,5 +302,27 @@ impl From<SelectMenu> for CreateSelectMenu {
             .placeholder(select_menu.placeholder())
             .min_values(select_menu.min_values())
             .max_values(select_menu.max_values())
+    }
+}
+
+impl From<SelectMenu> for CreateActionRow {
+    fn from(select_menu: SelectMenu) -> Self {
+        CreateActionRow::SelectMenu(select_menu.into())
+    }
+}
+
+impl FromStr for SelectMenu {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts = s.split(':').collect::<Vec<&str>>();
+        let action = parts.first().ok_or("Invalid")?;
+        match *action {
+            "member_select_menu" => Ok(SelectMenu::MemberSelectMenu {
+                season_uuid: parts.get(1).ok_or("Invalid")?.to_string(),
+            }),
+            "season_select_menu" => Ok(SelectMenu::SeasonSelectMenu(vec![])),
+            _ => Err("Invalid select menu ID".to_string()),
+        }
     }
 }

@@ -1,21 +1,23 @@
 use crate::Error;
 use poise::serenity_prelude::{
-    ComponentInteraction, Context as SerenityContext, CreateInteractionResponse,
-    CreateInteractionResponseMessage, ModalInteraction,
+    ComponentInteraction, Context as SerenityContext, CreateInteractionResponseFollowup,
+    ModalInteraction,
 };
+
+pub fn get_discord_guild_id_from_interaction(interaction: &ComponentInteraction) -> Option<String> {
+    interaction.guild_id.map(|id| id.to_string())
+}
 
 pub async fn send_success_response(
     ctx: &SerenityContext,
     interaction: &ComponentInteraction,
 ) -> Result<(), Error> {
     interaction
-        .create_response(
+        .create_followup(
             &ctx.http,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("Success!")
-                    .components(vec![]),
-            ),
+            CreateInteractionResponseFollowup::new()
+                .content("Success!")
+                .components(vec![]),
         )
         .await?;
 
@@ -28,13 +30,11 @@ pub async fn send_modal_error_response(
     error_message: &str,
 ) -> Result<(), Error> {
     match interaction
-        .create_response(
+        .create_followup(
             &ctx.http,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(error_message)
-                    .components(vec![]),
-            ),
+            CreateInteractionResponseFollowup::new()
+                .content(error_message)
+                .components(vec![]),
         )
         .await
     {
@@ -49,13 +49,11 @@ pub async fn send_component_error_response(
     error_message: &str,
 ) -> Result<(), Error> {
     match interaction
-        .create_response(
+        .create_followup(
             &ctx.http,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(error_message)
-                    .components(vec![]),
-            ),
+            CreateInteractionResponseFollowup::new()
+                .content(error_message)
+                .components(vec![]),
         )
         .await
     {

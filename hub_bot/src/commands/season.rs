@@ -1,4 +1,4 @@
-use crate::commands::common::get_discord_build_id_from_context;
+use crate::commands::common::get_discord_guild_id_from_context;
 use poise::CreateReply;
 use poise::serenity_prelude::CreateActionRow;
 use poise::serenity_prelude::CreateEmbed;
@@ -47,7 +47,7 @@ async fn setup_create_season_modal(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(track_edits, slash_command)]
 pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
     let db_service = ctx.data();
-    if let Some(guild_id) = get_discord_build_id_from_context(&ctx)
+    if let Some(guild_id) = get_discord_guild_id_from_context(&ctx)
         && let Some(org) = db_service.get_org_by_discord_id(&guild_id).await?
     {
         let org_id = org.id;
@@ -58,17 +58,28 @@ pub async fn seasons(ctx: Context<'_>) -> Result<(), Error> {
             .get_seasons_by_org_id(org_id, Some(order_by))
             .await?;
 
-        let mut season_embeded = CreateEmbed::default();
-        let mut description = String::new();
+        for (page, chunk) in seasons.chunks(10).enumerate() {
+            let mut season_embeded = CreateEmbed::default().title(if page == 0 {
+                "Seasons".to_string()
+            } else {
+                format!("Seasons - Page {}", page + 1)
+            });
+            for (i, season) in chunk.iter().enumerate() {
+                let global_index = page * 10 + i + 1;
+                let date_range = match season.end_date {
+                    Some(end) => format!("{} - {}", season.start_date, end),
+                    None => format!("{} - Present", season.start_date),
+                };
+                season_embeded = season_embeded.field(
+                    format!("{}. {}", global_index, season.title),
+                    format!("📅 {}", date_range),
+                    false,
+                );
+            }
 
-        for (i, season) in seasons.iter().enumerate() {
-            let formated_desc_str = format_season_description(i + 1, season);
-
-            description.push_str(&formated_desc_str);
+            ctx.send(CreateReply::default().embed(season_embeded))
+                .await?;
         }
-        season_embeded = season_embeded.description(description);
-        ctx.send(CreateReply::default().embed(season_embeded))
-            .await?;
     }
     Ok(())
 }
@@ -82,7 +93,7 @@ pub async fn season_info(
     #[description = "Season ID as found in /seasons"] season_id: Option<usize>,
 ) -> Result<(), Error> {
     let db_service = ctx.data();
-    if let Some(discord_guild_id) = get_discord_build_id_from_context(&ctx)
+    if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx)
         && let Some(org) = db_service.get_org_by_discord_id(&discord_guild_id).await?
     {
         let org_id = org.id;

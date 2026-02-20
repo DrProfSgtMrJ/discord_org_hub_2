@@ -52,5 +52,7 @@ pub async fn register_org(ctx: Context<'_>, member: Member, org_name: String) ->
             .await?;
         }
     }
+
+    ctx.defer().await?;
     Ok(())
 }
