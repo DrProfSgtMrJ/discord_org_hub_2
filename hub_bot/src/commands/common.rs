@@ -1,7 +1,10 @@
 use crate::Context;
-use poise::serenity_prelude::{ComponentInteraction, CreateInteractionResponse, CreateInteractionResponseFollowup, CreateInteractionResponseMessage, ModalInteraction};
-use sea_orm::{DbErr, SqlErr};
 use crate::Error;
+use poise::serenity_prelude::{
+    ComponentInteraction, CreateInteractionResponse, CreateInteractionResponseFollowup,
+    CreateInteractionResponseMessage, ModalInteraction,
+};
+use sea_orm::{DbErr, SqlErr};
 
 pub fn is_unique_violation(db_err: &DbErr) -> bool {
     if let Some(SqlErr::UniqueConstraintViolation(_)) = db_err.sql_err() {
@@ -30,8 +33,8 @@ pub async fn send_modal_error_response(
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
                     .content(error_message)
-                    .components(vec![])
-            )
+                    .components(vec![]),
+            ),
         )
         .await
     {
@@ -39,7 +42,6 @@ pub async fn send_modal_error_response(
         Err(err) => Err(Error::from(err)),
     }
 }
-
 
 pub async fn send_component_followup_error_response(
     ctx: &Context<'_>,
@@ -53,7 +55,8 @@ pub async fn send_component_followup_error_response(
                 .content(error_message)
                 .components(vec![]),
         )
-        .await {
+        .await
+    {
         Ok(_) => Ok(()),
         Err(err) => Err(Error::from(err)),
     }
@@ -64,7 +67,29 @@ pub async fn send_awknowledgement_response(
     interaction: &ComponentInteraction,
 ) -> Result<(), Error> {
     match interaction
-        .create_response(ctx.serenity_context(), CreateInteractionResponse::Acknowledge).await
+        .create_response(
+            ctx.serenity_context(),
+            CreateInteractionResponse::Acknowledge,
+        )
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
+pub async fn send_success_response(
+    ctx: &Context<'_>,
+    interaction: &ComponentInteraction,
+) -> Result<(), Error> {
+    match interaction
+        .create_followup(
+            &ctx.serenity_context().http,
+            CreateInteractionResponseFollowup::new()
+                .content("Success!")
+                .components(vec![]),
+        )
+        .await
     {
         Ok(_) => Ok(()),
         Err(err) => Err(Error::from(err)),
