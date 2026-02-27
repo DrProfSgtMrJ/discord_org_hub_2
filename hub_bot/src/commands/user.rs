@@ -1,4 +1,4 @@
-use super::common::is_unique_violation;
+use crate::common::is_unique_violation;
 use service::UserService;
 
 use crate::{Context, Error};
@@ -40,7 +40,7 @@ async fn register_user_internal(
     let discord_id = user.id.get().to_string();
     let avatar_url = user.avatar_url();
 
-    let db_service = ctx.data();
+    let db_service = &ctx.data().db_service;
 
     match db_service
         .create_user(discord_id.as_str(), display_name, timezone, avatar_url)
@@ -53,7 +53,6 @@ async fn register_user_internal(
                 user.display_name
             ))
             .await?;
-            Ok(())
         }
         Err(err) => {
             // Handle the error
@@ -67,7 +66,9 @@ async fn register_user_internal(
                 ctx.reply(format!("An unexpected error occurred: {}", err))
                     .await?;
             }
-            Err(err.into())
         }
     }
+
+    ctx.defer().await?;
+    Ok(())
 }

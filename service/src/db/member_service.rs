@@ -14,6 +14,13 @@ use uuid::Uuid;
 use crate::{DbService, OrderBy};
 
 #[derive(Debug, Clone)]
+pub struct MemberWithName {
+    pub member: MemberModel,
+    pub display_name: Option<String>,
+    pub discord_user_id: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct SeasonMemberWithName {
     pub season_member: SeasonMemberModel,
     pub member: Option<MemberModel>,
@@ -25,6 +32,10 @@ pub struct SeasonMemberWithName {
 pub trait MemberService {
     async fn create_member(&self, user_id: Uuid, org_id: Uuid) -> Result<MemberModel, DbErr>;
     async fn get_members_in_org(&self, org_id: Uuid) -> Result<Vec<MemberModel>, DbErr>;
+    async fn get_members_with_names_in_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<MemberWithName>, DbErr>;
     async fn get_member_by_ids(
         &self,
         discord_user_id: &str,
@@ -229,7 +240,6 @@ impl MemberService for DbService {
                             .await
                     }
                 };
-                println!("Results: {:?}", results);
                 if let Ok(res) = results {
                     let members: Vec<SeasonMemberWithName> = res
                         .into_iter()
@@ -241,6 +251,39 @@ impl MemberService for DbService {
                                 avatar_url: discord_user.clone().map(|user| user.avatar_url),
                             },
                         )
+                        .collect();
+                    return Ok(members);
+                }
+                Ok(vec![])
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn get_members_with_names_in_org(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<MemberWithName>, DbErr> {
+        match self.get_connection() {
+            Ok(conn) => {
+                let results = MemberEntity::find()
+                    .filter(member::Column::OrgId.eq(org_id))
+                    .join(
+                        sea_orm::JoinType::InnerJoin,
+                        member::Relation::DiscordUser.def(),
+                    )
+                    .select_also(discord_user::Entity)
+                    .all(conn)
+                    .await;
+
+                if let Ok(res) = results {
+                    let members: Vec<MemberWithName> = res
+                        .into_iter()
+                        .map(|(member, discord_user)| MemberWithName {
+                            member,
+                            display_name: discord_user.as_ref().map(|u| u.display_name.clone()),
+                            discord_user_id: discord_user.as_ref().map(|u| u.discord_id.clone()),
+                        })
                         .collect();
                     return Ok(members);
                 }
