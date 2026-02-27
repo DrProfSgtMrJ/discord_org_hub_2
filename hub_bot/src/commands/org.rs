@@ -2,7 +2,7 @@ use poise::serenity_prelude::Member;
 use service::OrgService;
 use service::UserService;
 
-use crate::commands::common::is_unique_violation;
+use crate::common::is_unique_violation;
 use crate::{Context, Error};
 
 /// Command to register an org

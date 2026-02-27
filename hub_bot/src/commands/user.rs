@@ -1,4 +1,4 @@
-use super::common::is_unique_violation;
+use crate::common::is_unique_violation;
 use service::UserService;
 
 use crate::{Context, Error};

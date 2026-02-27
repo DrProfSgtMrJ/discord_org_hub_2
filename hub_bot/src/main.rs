@@ -1,4 +1,5 @@
 mod commands;
+mod common;
 mod components;
 mod handler;
 
@@ -7,7 +8,7 @@ use poise::serenity_prelude::{self as serenity, FullEvent};
 
 use service::DbService;
 
-use crate::handler::{handle_guild_create};
+use crate::handler::handle_guild_create;
 
 pub struct BotData {
     pub db_service: DbService,
@@ -74,19 +75,11 @@ async fn main() {
                     "Got an event in event handler: {:?}",
                     event.snake_case_name()
                 );
-                match event {
-                    FullEvent::InteractionCreate { interaction } => {
-                        //handle_interaction(data, ctx, interaction).await;
-                    }
-                    FullEvent::GuildCreate { guild, is_new } => {
-                        if let Some(new) = is_new
-                            && *new
-                        {
-                            handle_guild_create(ctx, guild).await;
-                        }
-                        println!("Guild created: {}, is_new: {:?}", guild.name, is_new);
-                    }
-                    _ => {}
+                if let FullEvent::GuildCreate { guild, is_new } = event
+                    && let Some(new) = is_new
+                    && *new
+                {
+                    handle_guild_create(&data.db_service, ctx, guild).await;
                 }
                 Ok(())
             })
@@ -101,9 +94,7 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 let mut db_service = DbService::from_env()?;
                 db_service.connect().await?;
-                Ok(BotData {
-                    db_service,
-                })
+                Ok(BotData { db_service })
             })
         })
         .options(options)

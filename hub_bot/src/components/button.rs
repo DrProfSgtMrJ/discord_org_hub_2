@@ -3,35 +3,17 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub enum Button {
-    SetAsCurrentSeasonYes {
-        season_uuid: String,
-    },
-    SetAsCurrentSeasonNo {
-        season_uuid: String,
-    },
-    RegisterOrgYes {
-        org_name: String,
-        guild_id: String,
-        owner_id: String,
-    },
+    SetAsCurrentSeasonYes { season_uuid: String },
+    SetAsCurrentSeasonNo { season_uuid: String },
+    RegisterOrgYes,
     RegisterOrgNo,
     SeasonsPrev,
     SeasonsNext,
-    SeasonSurvivor {
-        is_active: bool,
-    },
-    SeasonTraitors {
-        is_active: bool,
-    },
-    SeasonBigBrother {
-        is_active: bool,
-    },
-    SeasonTheChallenge {
-        is_active: bool,
-    },
-    SeasonOther {
-        is_active: bool,
-    },
+    SeasonSurvivor { is_active: bool },
+    SeasonTraitors { is_active: bool },
+    SeasonBigBrother { is_active: bool },
+    SeasonTheChallenge { is_active: bool },
+    SeasonOther { is_active: bool },
 }
 
 impl Button {
@@ -39,11 +21,7 @@ impl Button {
         match self {
             Button::SetAsCurrentSeasonYes { season_uuid: _ } => "Yes".to_string(),
             Button::SetAsCurrentSeasonNo { season_uuid: _ } => "No".to_string(),
-            Button::RegisterOrgYes {
-                org_name: _,
-                guild_id: _,
-                owner_id: _,
-            } => "Yes".to_string(),
+            Button::RegisterOrgYes => "Yes".to_string(),
             Button::RegisterOrgNo => "No".to_string(),
             Button::SeasonsPrev => "◀".to_string(),
             Button::SeasonsNext => "▶".to_string(),
@@ -59,11 +37,7 @@ impl Button {
         match self {
             Button::SetAsCurrentSeasonYes { season_uuid: _ } => ButtonStyle::Primary,
             Button::SetAsCurrentSeasonNo { season_uuid: _ } => ButtonStyle::Secondary,
-            Button::RegisterOrgYes {
-                org_name: _,
-                guild_id: _,
-                owner_id: _,
-            } => ButtonStyle::Primary,
+            Button::RegisterOrgYes => ButtonStyle::Primary,
             Button::RegisterOrgNo => ButtonStyle::Secondary,
             Button::SeasonsPrev => ButtonStyle::Secondary,
             Button::SeasonsNext => ButtonStyle::Secondary,
@@ -113,13 +87,7 @@ impl Button {
             Button::SetAsCurrentSeasonNo { season_uuid } => {
                 format!("set_as_current_season_no:{}", season_uuid)
             }
-            Button::RegisterOrgYes {
-                org_name,
-                guild_id,
-                owner_id,
-            } => {
-                format!("register_org_yes:{}:{}:{}", org_name, guild_id, owner_id)
-            }
+            Button::RegisterOrgYes => "register_org_yes".to_string(),
             Button::RegisterOrgNo => "register_org_no".to_string(),
             Button::SeasonsPrev => "seasons_prev".to_string(),
             Button::SeasonsNext => "seasons_next".to_string(),
@@ -164,11 +132,7 @@ impl FromStr for Button {
             "set_as_current_season_no" => Ok(Button::SetAsCurrentSeasonNo {
                 season_uuid: parts.get(1).ok_or("Invalid")?.to_string(),
             }),
-            "register_org_yes" => Ok(Button::RegisterOrgYes {
-                org_name: parts.get(1).ok_or("Invalid")?.to_string(),
-                guild_id: parts.get(2).ok_or("Invalid")?.to_string(),
-                owner_id: parts.get(3).ok_or("Invalid")?.to_string(),
-            }),
+            "register_org_yes" => Ok(Button::RegisterOrgYes),
             "seasons_prev" => Ok(Button::SeasonsPrev),
             "seasons_next" => Ok(Button::SeasonsNext),
             "seasons_filter" => match parts.get(1).ok_or("Invalid") {

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 
-use crate::commands::common::{get_discord_guild_id_from_context, send_success_response};
+use crate::common::{get_discord_guild_id_from_context, send_success_response};
 use poise::CreateReply;
 use poise::serenity_prelude::{
     ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed,
@@ -16,11 +16,15 @@ use service::MemberService;
 use service::{OrderBy, OrgService, SeasonService};
 
 use super::season_helpers::{
-    create_season_with_type, handle_add_memebers_to_season, handle_modal_submission,
-    handle_season_type_select_menu, handle_set_current_season, send_add_members_to_season,
-    send_season_type_select_menu, send_set_season_as_current, setup_create_season_modal,
+    create_season_with_type, send_add_members_to_season, send_season_type_select_menu,
+    send_set_season_as_current, setup_create_season_modal,
 };
+
 use crate::components::Button;
+use crate::handler::handle_create_season::{
+    handle_add_memebers_to_season, handle_create_season_modal_submission,
+    handle_season_type_select_menu, handle_set_current_season,
+};
 use crate::{Context, Error};
 
 const SEASONS_PER_PAGE: usize = 10;
@@ -29,7 +33,7 @@ const SEASONS_PER_PAGE: usize = 10;
 pub async fn create_season(ctx: Context<'_>) -> Result<(), Error> {
     // Open Modal
     setup_create_season_modal(&ctx).await?;
-    let (parsed_season_data, modal_response) = handle_modal_submission(&ctx).await?;
+    let (parsed_season_data, modal_response) = handle_create_season_modal_submission(&ctx).await?;
     send_season_type_select_menu(&ctx, &modal_response).await?;
     let (season_type, component_interaction) = handle_season_type_select_menu(&ctx).await?;
     let season = create_season_with_type(
@@ -55,7 +59,7 @@ pub async fn create_season(ctx: Context<'_>) -> Result<(), Error> {
         &member_component_interaction,
     )
     .await?;
-    handle_set_current_season(&ctx, &season, &member_component_interaction).await?;
+    handle_set_current_season(&ctx, &season).await?;
     send_success_response(&ctx, &member_component_interaction).await?;
     Ok(())
 }

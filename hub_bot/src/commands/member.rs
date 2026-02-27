@@ -1,4 +1,4 @@
-use super::common::is_unique_violation;
+use crate::common::is_unique_violation;
 use poise::serenity_prelude::Member;
 use service::MemberService;
 use service::OrderBy;
@@ -6,7 +6,7 @@ use service::OrgService;
 use service::SeasonService;
 use service::UserService;
 
-use crate::commands::common::get_discord_guild_id_from_context;
+use crate::common::get_discord_guild_id_from_context;
 use crate::{Context, Error};
 
 /// Command to register a member to an organization
