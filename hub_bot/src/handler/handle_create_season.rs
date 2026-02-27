@@ -70,19 +70,28 @@ pub async fn handle_add_memebers_to_season(
     ctx: &Context<'_>,
     season_uuid: &str,
 ) -> Result<Arc<ComponentInteraction>, Error> {
+    let member_select_id = SelectMenu::MemberSelectMenu {
+        season_uuid: season_uuid.to_string(),
+    }
+    .id();
+    let member_skip_id = Button::MemberSelectSkip.id();
+
     let Some(component_response) = ComponentInteractionCollector::new(ctx.serenity_context())
         .author_id(ctx.author().id)
-        .custom_ids(vec![
-            SelectMenu::MemberSelectMenu {
-                season_uuid: season_uuid.to_string(),
-            }
-            .id(),
-        ])
+        .custom_ids(vec![member_select_id, member_skip_id])
         .timeout(Duration::from_secs(300))
         .await
     else {
         return Err("Failed to collect component response".into());
     };
+
+    if matches!(
+        Button::from_str(&component_response.data.custom_id),
+        Ok(Button::MemberSelectSkip)
+    ) {
+        send_awknowledgement_response(ctx, &component_response).await?;
+        return Ok(Arc::new(component_response));
+    }
 
     let selected_user_ids = match &component_response.data.kind {
         ComponentInteractionDataKind::UserSelect { values } => values.clone(),

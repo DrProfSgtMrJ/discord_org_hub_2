@@ -7,6 +7,7 @@ pub enum Button {
     SetAsCurrentSeasonNo { season_uuid: String },
     RegisterOrgYes,
     RegisterOrgNo,
+    MemberSelectSkip,
     SeasonsPrev,
     SeasonsNext,
     SeasonSurvivor { is_active: bool },
@@ -23,6 +24,7 @@ impl Button {
             Button::SetAsCurrentSeasonNo { season_uuid: _ } => "No".to_string(),
             Button::RegisterOrgYes => "Yes".to_string(),
             Button::RegisterOrgNo => "No".to_string(),
+            Button::MemberSelectSkip => "Skip".to_string(),
             Button::SeasonsPrev => "◀".to_string(),
             Button::SeasonsNext => "▶".to_string(),
             Button::SeasonSurvivor { .. } => "🏝️ Survivor".to_string(),
@@ -41,6 +43,7 @@ impl Button {
             Button::RegisterOrgNo => ButtonStyle::Secondary,
             Button::SeasonsPrev => ButtonStyle::Secondary,
             Button::SeasonsNext => ButtonStyle::Secondary,
+            Button::MemberSelectSkip => ButtonStyle::Secondary,
             Button::SeasonSurvivor { is_active } => {
                 if *is_active {
                     ButtonStyle::Primary
@@ -91,6 +94,7 @@ impl Button {
             Button::RegisterOrgNo => "register_org_no".to_string(),
             Button::SeasonsPrev => "seasons_prev".to_string(),
             Button::SeasonsNext => "seasons_next".to_string(),
+            Button::MemberSelectSkip => "member_select_skip".to_string(),
             Button::SeasonSurvivor { is_active } => {
                 format!("seasons_filter:Survivor:{}", is_active)
             }
@@ -135,6 +139,7 @@ impl FromStr for Button {
             "register_org_yes" => Ok(Button::RegisterOrgYes),
             "seasons_prev" => Ok(Button::SeasonsPrev),
             "seasons_next" => Ok(Button::SeasonsNext),
+            "member_select_skip" => Ok(Button::MemberSelectSkip),
             "seasons_filter" => match parts.get(1).ok_or("Invalid") {
                 Ok(ty) => {
                     let is_active = parts

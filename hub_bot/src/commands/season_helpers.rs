@@ -117,6 +117,10 @@ pub async fn send_add_members_to_season(
         season_uuid: season_uuid.to_string(),
     }
     .into();
+
+    let skip_button: CreateButton = Button::MemberSelectSkip.into();
+    let skip_button_row = CreateActionRow::Buttons(vec![skip_button]);
+
     component_interaction
         .create_followup(
             &ctx.serenity_context().http,
@@ -125,7 +129,7 @@ pub async fn send_add_members_to_season(
                     "Season: '{}' created successfully. Add members to season?",
                     season_title
                 ))
-                .components(vec![select_user_menu]),
+                .components(vec![select_user_menu, skip_button_row]),
         )
         .await?;
 
