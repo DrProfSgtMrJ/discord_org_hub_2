@@ -2,12 +2,16 @@ use entity::discord_user::{self};
 use entity::member::{
     self, ActiveModel as MemberActiveModel, Entity as MemberEntity, Model as MemberModel,
 };
-use entity::season_member::{ActiveModel as SeasonMemberActiveModel, Model as SeasonMemberModel};
+use entity::season_member::{
+    ActiveModel as SeasonMemberActiveModel, Entity as SeasonMemberEntity,
+    Model as SeasonMemberModel,
+};
 use entity::{org, season_member};
+use sea_orm::ActiveValue::Set;
 use sea_orm::sea_query::NullOrdering;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
-    RelationTrait,
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, IntoActiveModel, QueryFilter, QueryOrder,
+    QuerySelect, RelationTrait,
 };
 use uuid::Uuid;
 
@@ -53,6 +57,18 @@ pub trait MemberService {
         season_id: Uuid,
         order_by: Option<OrderBy<season_member::Column>>,
     ) -> Result<Vec<SeasonMemberWithName>, DbErr>;
+
+    async fn get_season_member(
+        &self,
+        season_id: Uuid,
+        member_id: Uuid,
+    ) -> Result<Option<SeasonMemberModel>, DbErr>;
+
+    async fn update_season_member_placement(
+        &self,
+        season_member_uuid: Uuid,
+        placement: Option<i32>,
+    ) -> Result<(), DbErr>;
 }
 
 #[async_trait::async_trait]
@@ -288,6 +304,45 @@ impl MemberService for DbService {
                     return Ok(members);
                 }
                 Ok(vec![])
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn get_season_member(
+        &self,
+        season_id: Uuid,
+        member_id: Uuid,
+    ) -> Result<Option<SeasonMemberModel>, DbErr> {
+        match self.get_connection() {
+            Ok(conn) => {
+                let season_member = SeasonMemberEntity::find()
+                    .filter(season_member::Column::MemberId.eq(member_id))
+                    .filter(season_member::Column::SeasonId.eq(season_id))
+                    .one(conn)
+                    .await?;
+                Ok(season_member)
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn update_season_member_placement(
+        &self,
+        season_member_uuid: Uuid,
+        placement: Option<i32>,
+    ) -> Result<(), DbErr> {
+        match self.get_connection() {
+            Ok(conn) => {
+                if let Some(season_member) = SeasonMemberEntity::find_by_id(season_member_uuid)
+                    .one(conn)
+                    .await?
+                {
+                    let mut season_member_active_model = season_member.into_active_model();
+                    season_member_active_model.placement = Set(placement);
+                    season_member_active_model.update(conn).await?;
+                }
+                Ok(())
             }
             Err(err) => Err(err),
         }
