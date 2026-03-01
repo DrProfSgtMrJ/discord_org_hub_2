@@ -146,3 +146,63 @@ pub async fn add_to_season(
     }
     Ok(())
 }
+
+/// Command to update a member's placement in a season
+///
+/// Enter !update_placement <season number> @member placement
+#[poise::command(prefix_command, track_edits, owners_only, slash_command)]
+pub async fn update_placement(
+    ctx: Context<'_>,
+    #[description = "Season ID as found in /seasons"] season_id: usize,
+    member: Member,
+    #[description = "Placement in the season. If not provided, placement will be removed"]
+    placement: Option<i32>,
+) -> Result<(), Error> {
+    if let Some(discord_guild_id) = get_discord_guild_id_from_context(&ctx) {
+        let db_service = &ctx.data().db_service;
+        let discord_user_id = member.user.id.get().to_string();
+        let display_name = member.user.display_name();
+        if let Some(db_member) = db_service
+            .get_member_by_ids(&discord_user_id, &discord_guild_id)
+            .await?
+        {
+            let org_id = db_member.org_id;
+            let order_by = OrderBy::Asc {
+                column: entity::season::Column::StartDate,
+            };
+            let seasons = db_service
+                .get_seasons_by_org_id(org_id, Some(order_by))
+                .await?;
+            if let Some(selected_season) = seasons.get(season_id - 1) {
+                let member_id = db_member.id;
+                let selected_season_id = selected_season.id;
+                if let Some(season_member) = db_service
+                    .get_season_member(selected_season_id, member_id)
+                    .await?
+                {
+                    if let Err(err) = db_service
+                        .update_season_member_placement(season_member.id, placement)
+                        .await
+                    {
+                        ctx.reply(format!("An error occured: {}", err)).await?;
+                    } else {
+                        ctx.reply(format!("Updated Member {} placement!", display_name))
+                            .await?;
+                    }
+                } else {
+                    ctx.reply(format!(
+                        "Member {} not found for season {}",
+                        display_name, selected_season.title
+                    ))
+                    .await?;
+                }
+            } else {
+                ctx.reply("Invalid season number").await?;
+            }
+        } else {
+            ctx.reply(format!("Member {} not found", display_name))
+                .await?;
+        }
+    }
+    Ok(())
+}
